@@ -1,0 +1,152 @@
+# ========================
+# Operating System Files
+# ========================
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+desktop.ini
+/media
+/certificate_storage
+
+# ========================
+# Python/Django
+# ========================
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Django
+*.log
+local_settings.py
+db.sqlite3
+db.sqlite3-journal
+*.pot
+
+# PyInstaller
+*.manifest
+*.spec
+
+# Unit test / coverage reports
+htmlcov/
+.tox/
+.nox/
+.coverage
+.coverage.*
+.cache
+nosetests.xml
+coverage.xml
+*.cover
+.hypothesis/
+.pytest_cache/
+
+# Environments
+.env
+.env.local
+.env.*.local
+.venv
+env/
+venv/
+ENV/
+env.bak/
+venv.bak/
+
+# Virtual environment (Pipenv/Poetry)
+Pipfile.lock
+poetry.lock
+pyproject.toml
+pythonenv*
+
+# Django migrations (optional - be careful!)
+# !/backend/**/migrations/
+# !/backend/**/migrations/__init__.py
+
+# ========================
+# Node/React
+# ========================
+# Dependencies
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.pnpm-debug.log*
+
+# Build directories
+build/
+dist/
+out/
+.next/
+.nuxt/
+
+# Coverage directory
+coverage/
+
+# Production
+.cache/
+
+# Serverless directories
+.serverless/
+
+# FuseBox cache
+.fusebox/
+
+# DynamoDB Local files
+.dynamodb/
+
+# TernJS port file
+.tern-port
+
+# ========================
+# IDE/Editor
+# ========================
+# VSCode
+.vscode/*
+!.vscode/settings.json
+!.vscode/tasks.json
+!.vscode/launch.json
+!.vscode/extensions.json
+.history
+
+# JetBrains IDEs
+.idea/
+*.iws
+*.iml
+*.ipr
+
+# Sublime Text
+*.sublime-*
+
+# ========================
+# Project-Specific
+# ========================
+# Media files (if using Django)
+media/
+!media/.gitkeep
+
+# Static files (if collected)
+staticfiles/
+
+# Database backups
+*.backup
+*.dump
+
+# Secret keys
+secrets.py
+config.py
+config/keys/
+
+
+# ========================
+# OS-Specific
+# ========================
+# Windows
+*.cab
+*.msi
+*.msix
+*.msm
+*.msp
+*.lnk
