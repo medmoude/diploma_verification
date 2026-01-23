@@ -3,24 +3,33 @@ import api from "../api/axios";
 import MainLayout from "../components/Layout/MainLayout";
 import EtudiantFormModal from "../components/EtudiantFormModal";
 import EtudiantDetailsModal from "../components/EtudiantDetailsModal";
+import Alert from "../components/Alert";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import {
   faTrash,
   faEdit,
   faPlus,
   faFileExcel,
-  faEye
+  faEye,
+  faDownload
 } from "@fortawesome/free-solid-svg-icons";
-import Pagination from "../components/Pagination"; // <-- custom pagination component
+import Pagination from "../components/Pagination";
 
 export default function Etudiants() {
   /* ===================== STATE ===================== */
+  const [useDefaultEmail, setUseDefaultEmail] = useState(true);
+  const [emailDomain, setEmailDomain] = useState("@isms.esp.mr");
+  const [importOpen, setImportOpen] = useState(false);
+  const [importFile, setImportFile] = useState(null);
+  const [importFiliere, setImportFiliere] = useState("");
+  const [importAnnee, setImportAnnee] = useState("");
+
+  const [alert, setAlert] = useState(null);
   const [etudiants, setEtudiants] = useState([]);
   const [filieres, setFilieres] = useState([]);
   const [diplomes, setDiplomes] = useState([]);
   const [annees, setAnnees] = useState([]);
 
-  const [file, setFile] = useState(null);
   const [search, setSearch] = useState("");
 
   const [modalOpen, setModalOpen] = useState(false);
@@ -63,26 +72,37 @@ export default function Etudiants() {
   }, []);
 
   /* ===================== ACTIONS ===================== */
-  const handleFileUpload = async (e) => {
-    e.preventDefault();
-    if (!file) return;
+  // const handleFileUpload = async (e) => {
+  //   e.preventDefault();
+  //   if (!file) return;
 
-    const formData = new FormData();
-    formData.append("file", file);
+  //   const formData = new FormData();
+  //   formData.append("file", file);
 
-    try {
-      await api.post("etudiants/import_excel/", formData);
-      setFile(null);
-      fetchEtudiants();
-      alert("Étudiants importés avec succès ✅");
-    } catch {
-      alert("Erreur lors de l'import ❌");
-    }
-  };
+  //   try {
+  //     await api.post("etudiants/import_excel/", formData);
+  //     setFile(null);
+  //     fetchEtudiants();
+  //     setAlert({
+  //       type: "success",
+  //       message: "Étudiants importés avec succès ✅",
+  //     });
+
+  //   } catch {
+  //     setAlert({
+  //       type: "error",
+  //       message: "Erreur lors de l'import ❌"
+  //     })
+  //   }
+  // };
 
   const deleteEtudiant = async (id) => {
     if (!window.confirm("Supprimer cet étudiant ?")) return;
     await api.delete(`etudiants/${id}/`);
+    setAlert({
+      type: "success",
+      message: "L'étudiant est supprimé avec succès"
+    });
     fetchEtudiants();
   };
 
@@ -101,6 +121,79 @@ export default function Etudiants() {
     setDetailsOpen(true);
   };
 
+  const resetImportModal = () => {
+    setImportFile(null);
+    setImportFiliere("");
+    setImportAnnee("");
+    setUseDefaultEmail(true);
+    setEmailDomain("@isms.esp.mr");
+  };
+
+
+  const handleExcelImport = async () => {
+    if (!importFile || !importFiliere || !importAnnee) {
+      setAlert({ type: "warning", message: "Tous les champs sont requis" });
+      return;
+    }
+
+    const formData = new FormData();
+    formData.append("file", importFile);
+    formData.append("filiere", importFiliere);
+    formData.append("annee_universitaire", importAnnee);
+    formData.append("email_domain", useDefaultEmail ? "@isms.esp.mr" : emailDomain);
+
+    try {
+      const res = await api.post("etudiants/import_excel/", formData);
+
+      const { created, skipped_count, skipped} = res.data;
+
+      let msg = `Terminé ✅\nAjoutés : ${created} `;
+
+      if (skipped_count > 0) {
+        const matricules = skipped.map(s => s.matricule).join(", ");
+        msg += `\nIgnorés (${skipped_count}) : ${matricules}`;
+      }
+
+      setAlert({
+        type: skipped_count > 0 ? "warning" : "success",
+        message: msg
+      });
+
+      resetImportModal();
+      setImportOpen(false);
+      fetchEtudiants();
+
+    } catch (err) {
+      setAlert({
+        type: "error",
+        message: "Erreur lors de l'import Excel"
+      });
+    }
+
+  };
+
+
+  const downloadTemplate = async () => {
+    try {
+      const response = await api.get(
+        "etudiants/download_excel_template/",
+        { responseType: "blob" }
+      );
+
+      const url = window.URL.createObjectURL(new Blob([response.data]));
+      const link = document.createElement("a");
+      link.href = url;
+      link.setAttribute("download", "etudiants_template.xlsx");
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+
+    } catch (err) {
+      setAlert({ type: "error", message: "Erreur téléchargement du modèle Excel" });
+    }
+  };
+
+
   /* ===================== FILTER & PAGINATION ===================== */
   const filteredEtudiants = etudiants
     .filter(e =>
@@ -118,6 +211,16 @@ export default function Etudiants() {
   /* ===================== RENDER ===================== */
   return (
     <MainLayout title="Étudiants">
+
+      {alert && (
+        <Alert
+          type={alert.type}
+          onClose={() => setAlert(null)}
+        >
+          {alert.message}
+        </Alert>
+      )}
+
       <div className="max-w-7xl mx-auto px-4">
 
         {/* HEADER */}
@@ -125,25 +228,21 @@ export default function Etudiants() {
           <h2 className="text-3xl font-bold text-gray-800">Étudiants</h2>
 
           <div className="flex flex-wrap gap-2">
-            <label
-              className="p-3 bg-green-500 hover:bg-green-600 text-white rounded-full cursor-pointer shadow-md transition"
+
+            <button
+              onClick={downloadTemplate}
+              className="p-3 bg-emerald-500 hover:bg-emerald-600 text-white rounded-full shadow-md"
+              title="Télécharger modèle Excel"
+            >
+              <FontAwesomeIcon icon={faDownload} />
+            </button>
+
+            <button
+              onClick={() => setImportOpen(true)}
+              className="p-3 bg-green-500 hover:bg-green-600 text-white rounded-full shadow-md"
               title="Importer Excel"
             >
               <FontAwesomeIcon icon={faFileExcel} />
-              <input
-                hidden
-                type="file"
-                accept=".xlsx,.xls"
-                onChange={(e) => setFile(e.target.files[0])}
-              />
-            </label>
-
-            <button
-              onClick={handleFileUpload}
-              className="p-3 bg-green-600 hover:bg-green-700 text-white rounded-full shadow-md transition"
-              title="Valider import"
-            >
-              ✔
             </button>
 
             <button
@@ -153,6 +252,7 @@ export default function Etudiants() {
             >
               <FontAwesomeIcon icon={faPlus} />
             </button>
+
           </div>
         </div>
 
@@ -299,6 +399,97 @@ export default function Etudiants() {
         }}
         refresh={fetchEtudiants}
       />
+
+      {importOpen && (
+        <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg p-6 w-full max-w-md">
+            <h3 className="text-xl font-semibold mb-4">Importer étudiants</h3>
+
+            {/* File upload */}
+            <input
+              type="file"
+              accept=".xlsx,.xls"
+              onChange={e => setImportFile(e.target.files[0])}
+              className="mb-2"
+            />
+            {importFile && (
+              <p className="text-sm text-gray-600 mb-4">
+                  <div class="bg-green-500 text-white rounded inline-block">
+                    <FontAwesomeIcon icon={faFileExcel} />
+                  </div>
+                  <span className="font-bold ml-2">
+                    {importFile.name}
+                  </span>
+              </p>
+            )}
+
+            {/* Filiere */}
+            <select
+              className="w-full p-2 border rounded mb-3"
+              value={importFiliere}
+              onChange={e => setImportFiliere(e.target.value)}
+            >
+              <option value="">Sélectionner une filière</option>
+              {filieres.map(f => (
+                <option key={f.id} value={f.id}>{f.code_filiere}</option>
+              ))}
+            </select>
+
+            {/* Annee */}
+            <select
+              className="w-full p-2 border rounded mb-4"
+              value={importAnnee}
+              onChange={e => setImportAnnee(e.target.value)}
+            >
+              <option value="">Sélectionner une année</option>
+              {annees.map(a => (
+                <option key={a.id} value={a.id}>{a.code_annee}</option>
+              ))}
+            </select>
+
+            {/* Email option */}
+            <div className="mb-4">
+              <label className="flex items-center gap-2 mb-2">
+                <input
+                  type="checkbox"
+                  checked={useDefaultEmail}
+                  onChange={e => setUseDefaultEmail(e.target.checked)}
+                />
+                  Utiliser l'email ISMS – tous étudiants. (@isms.esp.mr)
+              </label>
+
+              {!useDefaultEmail && (
+                <input
+                  type="text"
+                  className="w-full p-2 border rounded"
+                  placeholder="@ise.esp.mr"
+                  value={emailDomain}
+                  onChange={e => setEmailDomain(e.target.value)}
+                />
+              )}
+            </div>
+
+            {/* Actions */}
+            <div className="flex justify-end gap-2">
+              <button 
+                onClick={() => { 
+                  resetImportModal();
+                  setImportOpen(false);
+                }} 
+                className="px-4 py-2">
+                Annuler
+              </button>
+              <button
+                onClick={handleExcelImport}
+                className="px-4 py-2 bg-green-600 text-white rounded"
+              >
+                Importer
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
     </MainLayout>
   );
 }

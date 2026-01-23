@@ -10,6 +10,7 @@ import Parametres from "./pages/Parametres";
 import Verify from "./pages/Verify";
 import Filieres from "./pages/Filieres";
 import Annees from "./pages/Annees";
+import StructureDiplome from "./pages/StructureDiplome";
 import VerifyFile from "./pages/VerifyFile";
 import VerificationLayout from "./components/Layout/VerificationLayout";
 
@@ -52,6 +53,15 @@ function App() {
         <Route
           path="/annees_universitaires"
           element={<PrivateRoute><Annees /></PrivateRoute>}
+        />
+
+        <Route
+          path="structure-diplome"
+          element={
+            <PrivateRoute>
+              <StructureDiplome />
+            </PrivateRoute>
+          }
         />
 
         <Route

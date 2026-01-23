@@ -96,7 +96,7 @@ export default function AnneeFormModal({ onClose, onSave, editingAnnee }) {
               type="text"
               value={code}
               onChange={(e) => setCode(e.target.value)}
-              placeholder="2024-2025"
+              placeholder="Ex:2024-2025"
               pattern="\d{4}-\d{4}"
               title="Format attendu : 2024-2025"
               className="w-full border rounded-lg px-3 py-2"

@@ -1,11 +1,12 @@
 from django.urls import path
 from rest_framework.routers import DefaultRouter
-from .api_views import (
-    DiplomeViewSet, 
+from .api_views import ( 
     EtudiantViewSet, 
     FiliereViewSet, 
     VerificationViewSet,
     AnneUniversitaireViewSet,
+    DiplomeViewSet,
+    StructureDiplomeViewSet,
     GenerateDiplomeView,
     GenerateDiplomeByFiliereView,
     DownloadDiplomeView,
@@ -16,6 +17,7 @@ from .api_views import (
 router = DefaultRouter()
 router.register("etudiants", EtudiantViewSet)
 router.register("diplomes", DiplomeViewSet)
+router.register("structure_diplome", StructureDiplomeViewSet)
 router.register("filieres", FiliereViewSet)
 router.register("verifications", VerificationViewSet)
 router.register("annee_universitaire", AnneUniversitaireViewSet)

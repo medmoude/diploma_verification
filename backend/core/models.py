@@ -19,6 +19,7 @@ class Filiere(models.Model):
     def __str__(self):
         return self.code_filiere
     
+
     
 class AnneeUniversitaire(models.Model):
     code_annee = models.CharField(
@@ -38,13 +39,14 @@ class AnneeUniversitaire(models.Model):
         return self.code_annee
 
 
+
 class Etudiant(models.Model):
     user = models.OneToOneField(User, on_delete=models.CASCADE, null=True, blank=True)
     nom_prenom_fr = models.CharField(max_length=50)
     nom_prenom_ar = models.CharField(max_length=255)
     matricule = models.IntegerField(unique=True, null=False, blank=False)
     email = models.EmailField(unique=True, null=True, blank=True)
-    nni = models.IntegerField(unique=True, null=False, blank=False)
+    nni = models.CharField(max_length=20, unique=True, null=False, blank=False)
     date_naissance = models.DateField(null=False, blank=False)
     lieu_naissance_fr = models.CharField(max_length=100, null=False, blank=False)
     lieu_naissance_ar = models.CharField(max_length=100, null=False, blank=False)
@@ -60,12 +62,13 @@ class Etudiant(models.Model):
 
 
     def __str__(self):
-        return f"{self.prenom} {self.nom}"
+        return f"{self.nom_prenom_fr}"
+
 
 
 
 class Diplome(models.Model):
-    etudiant = models.ForeignKey(Etudiant, on_delete=models.CASCADE, related_name="Diplômes")
+    etudiant = models.ForeignKey(Etudiant, on_delete=models.CASCADE, related_name="Diplomes")
     numero_diplome = models.IntegerField(null=False, blank=False)
     specialite = models.ForeignKey(Filiere, on_delete=models.CASCADE)
     type_diplome = models.CharField(max_length=100)
@@ -86,33 +89,57 @@ class Diplome(models.Model):
         return f"{self.type_diplome} - {self.etudiant}"
 
 
+
 class StructureDiplome(models.Model):
-    nom_pays_fr = models.CharField(max_length=150)
-    nom_pays_ar = models.CharField(max_length=150)
+    # Background / border
+    image_border = models.ImageField(upload_to="images/", null=False, blank=False)
 
-    devise_nationale_fr = models.CharField(max_length=150)
-    devise_nationale_ar = models.CharField(max_length=150)
+    # Header logos
+    image_logo_left = models.ImageField(upload_to="images/", null=False, blank=False)
+    image_logo_right = models.ImageField(upload_to="images/", null=False, blank=False)
 
-    nom_ministere_fr = models.CharField(max_length=250)
-    nom_ministere_ar = models.CharField(max_length=250)
+    # Header
+    republique_fr = models.CharField(max_length=150, default="REPUBLIQUE ISLAMIQUE DE MAURITANIE")
+    republique_ar = models.CharField(max_length=150, default="الجمهورية الإسلامية الموريتانية")
+    devise_fr = models.CharField(max_length=150, default="Honneur-Fraternité-Justice")
+    devise_ar = models.CharField(max_length=150, default="شرف-إخاء-عدل")
 
-    nom_groupe_fr = models.CharField(max_length=250, blank=True, null=True)
-    nom_groupe_ar = models.CharField(max_length=250, blank=True, null=True)
+    ministere_fr = models.CharField(max_length=250)
+    ministere_ar = models.CharField(max_length=250)
 
-    nom_institut_fr = models.CharField(max_length=250, blank=True, null=True)
-    nom_institut_ar = models.CharField(max_length=250, blank=True, null=True)
+    groupe_fr = models.CharField(max_length=250)
+    groupe_ar = models.CharField(max_length=250)
 
-    intitule_diplome_fr = models.CharField(max_length=250, blank=True, null=True)
-    intitule_diplome_ar = models.CharField(max_length=250, blank=True, null=True)
+    institut_fr = models.CharField(max_length=250)
+    institut_ar = models.CharField(max_length=250)
 
-    signataire_1_nom_fr = models.CharField(max_length=150, blank=True, null=True)
-    signataire_1_nom_ar = models.CharField(max_length=150, blank=True, null=True)
+    # Diploma title
+    diplome_titre_fr = models.CharField(max_length=250)
+    diplome_titre_ar = models.CharField(max_length=250)
 
-    signataire_2_nom_fr = models.CharField(max_length=150, blank=True, null=True)
-    signataire_2_nom_ar = models.CharField(max_length=150, blank=True, null=True)
+    # Legal Citations
+    citations_juridiques_fr = models.TextField(help_text="Liste des décrets et lois")
+    citations_juridiques_ar = models.TextField(help_text="قائمة القوانين والمراسيم")
+
+    # Add to StructureDiplome
+    label_pv_jury_fr = models.CharField(max_length=255, default="Vu le procès-verbal du jury des examens tenu en date du")
+    label_pv_jury_ar = models.CharField(max_length=255, default="وبناء على محضر لجنة الامتحانات الصادر بتاريخ")
+    date_pv_jury = models.DateField(null=True, blank=True)
+
+    # Footer / signatures
+    date_verification = models.DateField(null=True, blank=True)
+
+
+    signataire_droit_fr = models.CharField(max_length=150)
+    signataire_droit_ar = models.CharField(max_length=150)
+    signataire_droit_nom = models.CharField(max_length=150)
+
+    signataire_gauche_fr = models.CharField(max_length=150)
+    signataire_gauche_ar = models.CharField(max_length=150)
+    signataire_gauche_nom = models.CharField(max_length=150)
 
     def __str__(self):
-        return f"{self.intitule_diplome_fr} - {self.nom_institut_fr}"
+        return "Structure du diplôme"
 
 
 

@@ -9,6 +9,8 @@ from django.shortcuts import get_object_or_404
 from datetime import datetime
 import os, uuid, hashlib
 from django.conf import settings
+from django.http import HttpResponse
+from django.db import IntegrityError
 import qrcode
 from io import BytesIO
 from reportlab.pdfgen import canvas
@@ -39,18 +41,84 @@ class EtudiantViewSet(viewsets.ModelViewSet):
 
     @action(detail=False, methods=["post"])
     def import_excel(self, request):
-        df = pd.read_excel(request.FILES["file"])
-        for _, row in df.iterrows():
-            Etudiant.objects.get_or_create(
-                matricule=int(row["Matricule"]),
-                defaults={
-                    "prenom": row["Prénom"].capitalize(),
-                    "nom": row["Nom"].capitalize(),
-                    "filiere": row["Filière"].upper(),
-                    "email": f"{str(row['Matricule'])}@isms.esp.mr"
-                }
+        file = request.FILES.get("file")
+        filiere_id = request.data.get("filiere")
+        annee_id = request.data.get("annee_universitaire")
+        email_domain = request.data.get("email_domain", "@isms.esp.mr")
+        
+
+        if not file or not filiere_id or not annee_id:
+            return Response(
+                {"error": "file, filiere et annee_universitaire requis"},
+                status=400
             )
-        return Response({"status": "ok"})
+
+        filiere = Filiere.objects.get(id=filiere_id)
+        annee = AnneeUniversitaire.objects.get(id=annee_id)
+
+        df = pd.read_excel(file)
+
+        created = 0
+        skipped = []
+
+        for index, row in df.iterrows():
+            try:
+                Etudiant.objects.create(
+                    nom_prenom_fr=row["nom_prenom_fr"],
+                    nom_prenom_ar=row["nom_prenom_ar"],
+                    matricule=int(row["matricule"]),
+                    email=f"{row['matricule']}{email_domain}",
+                    nni=str(row["nni"]),
+                    date_naissance=row["date_naissance"],
+                    lieu_naissance_fr=row["lieu_naissance_fr"],
+                    lieu_naissance_ar=row["lieu_naissance_ar"],
+                    mention_fr=row["mention_fr"],
+                    mention_ar=row["mention_ar"],
+                    filiere=filiere,
+                    annee_universitaire=annee
+                )
+                created += 1
+
+            except IntegrityError:
+                skipped.append({
+                    "row": index + 2,  # Excel row (header = 1)
+                    "matricule": row["matricule"],
+                    "nni": row["nni"],
+                    "reason": "Déjà existant"
+                })
+
+
+        return Response({
+            "created": created,
+            "skipped_count": len(skipped),
+            "skipped": skipped
+        })
+
+    
+    @action(detail=False, methods=["get"])
+    def download_excel_template(self, request):
+        columns = [
+            "nom_prenom_fr",
+            "nom_prenom_ar",
+            "matricule",
+            "nni",
+            "date_naissance",
+            "lieu_naissance_fr",
+            "lieu_naissance_ar",
+            "mention_fr",
+            "mention_ar",
+        ]
+
+        df = pd.DataFrame(columns=columns)
+
+        response = HttpResponse(
+            content_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+        )
+        response["Content-Disposition"] = 'attachment; filename="etudiants_template.xlsx"'
+
+        df.to_excel(response, index=False)
+        return response
+
 
 
 class DiplomeViewSet(viewsets.ModelViewSet):

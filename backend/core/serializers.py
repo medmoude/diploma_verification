@@ -1,7 +1,7 @@
 from rest_framework import serializers
 from django.core.exceptions import ValidationError as DjangoValidationError
 from .models import Diplome, Etudiant, Filiere, Verification, AnneeUniversitaire, StructureDiplome
-import re  # Add this import
+import re
 
 
 class EtudiantSerializer(serializers.ModelSerializer):

@@ -6,6 +6,7 @@ import {
   faFilePdf
 } from "@fortawesome/free-solid-svg-icons";
 import api from "../api/axios";
+import Alert from "./Alert";
 
 export default function EtudiantDetailsModal({
   open,
@@ -19,7 +20,7 @@ export default function EtudiantDetailsModal({
   if (!open || !etudiant) return null;
 
   const filiere = filieres.find(f => f.id === etudiant.filiere);
-  const initials = `${etudiant.nom_prenom_fr[0,2]}`.toUpperCase();
+  const initials = `${etudiant.nom_prenom_fr[0]} ${etudiant.nom_prenom_ar[0]} `.toUpperCase();
 
   /* ===================== ACTIONS ===================== */
 
@@ -27,7 +28,7 @@ export default function EtudiantDetailsModal({
     try {
       await api.post(`diplomes/generate/${etudiant.id}/`);
       refresh();
-      alert("Diplôme généré avec succès");
+      
     } catch (err) {
       alert(err.response?.data?.error || "Erreur génération diplôme");
     }
@@ -90,7 +91,7 @@ export default function EtudiantDetailsModal({
         <div className="text-sm space-y-2">
           <p><strong>Email :</strong> {etudiant.email || "—"}</p>
           <p><strong>Filière :</strong> {filiere?.code_filiere || "—"}</p>
-          <p><strong>Année :</strong> {filiere?.code_filiere || "—"}</p>
+          <p><strong>Date de naissance :</strong> {etudiant?.date_naissance || "—"}</p>
         </div>
 
         {/* Diplômes */}

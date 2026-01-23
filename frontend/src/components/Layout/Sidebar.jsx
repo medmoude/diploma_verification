@@ -24,10 +24,15 @@ export default function Sidebar() {
 
   // Auto-open settings if on a settings page
   useEffect(() => {
-    if (path === "/filieres" || path === "/annees_universitaires") {
+    if (
+      path === "/filieres" ||
+      path === "/annees_universitaires" ||
+      path === "/structure-diplome"
+    ) {
       setSettingsOpen(true);
     }
   }, [path]);
+
 
   const mainLinks = [
     { name: "Dashboard", path: "/dashboard", icon: faHome },
@@ -115,6 +120,16 @@ export default function Sidebar() {
                 >
                   <FontAwesomeIcon icon={faCalendarAlt} className="w-4 h-4 mr-3 text-gray-500" />
                   <span className="text-sm">Gestion Années Universitaires</span>
+                </Link>
+                <Link
+                  to="/structure-diplome"
+                  className={`flex items-center px-3 py-2 my-1 rounded hover:bg-gray-200 transition ${
+                    path === "/structure-diplome" ? "bg-gray-200 font-semibold" : ""
+                  }`}
+                  onClick={() => setOpen(false)}
+                >
+                  <FontAwesomeIcon icon={faCertificate} className="w-4 h-4 mr-3 text-gray-500" />
+                  <span className="text-sm">Structure du diplôme</span>
                 </Link>
               </div>
             )}

@@ -2,6 +2,9 @@
 @tailwind components;
 @tailwind utilities;
 
+/* Google fonts */
+@import url('https://fonts.googleapis.com/css2?family=EB+Garamond:ital,wght@0,400;0,600;0,700;1,400&family=Playfair+Display:wght@700;900&display=swap');
+
 
 @keyframes fade-in {
   from {
@@ -14,6 +17,16 @@
   }
 }
 
+.diploma-title {
+  text-shadow: 0.5px 0.5px 0px rgba(0,0,0,0.2);
+}
+
 .animate-fade-in {
   animation: fade-in 0.4s ease-out;
 }
+
+.rtl {
+  direction: rtl;
+  text-align: right;
+}
+
