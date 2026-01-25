@@ -41,6 +41,8 @@ from core.security.pdf_signer import sign_pdf
 from pyhanko.sign.validation import validate_pdf_signature
 from pyhanko_certvalidator import ValidationContext
 from pyhanko.pdf_utils.reader import PdfFileReader
+from cryptography import x509
+from cryptography.hazmat.backends import default_backend
 
 
 # Models & Serializers
@@ -196,40 +198,6 @@ class EtudiantViewSet(viewsets.ModelViewSet):
 class DiplomeViewSet(viewsets.ModelViewSet):
     queryset = Diplome.objects.all()
     serializer_class = DiplomeSerializer
-
-    @action(detail=True, methods=["post"], permission_classes=[IsAuthenticated])
-    def toggle_annulation(self, request, pk=None):
-        diplome = self.get_object()
-
-        if diplome.est_annule:
-            # 🔄 UNANNULER
-            diplome.est_annule = False
-            diplome.annule_a = None
-            diplome.raison_annulation = ""
-            diplome.save()
-
-            return Response({
-                "status": "unannule",
-                "message": "Diplôme réactivé avec succès"
-            })
-
-        # 🔴 ANNULER
-        raison = request.data.get("raison_annulation")
-        if not raison:
-            return Response(
-                {"error": "Raison d'annulation obligatoire"},
-                status=400
-            )
-
-        diplome.est_annule = True
-        diplome.annule_a = now()
-        diplome.raison_annulation = raison
-        diplome.save()
-
-        return Response({
-            "status": "annule",
-            "message": "Diplôme annulé avec succès"
-        })
 
 
 class StructureDiplomeViewSet(viewsets.ModelViewSet):
@@ -572,11 +540,16 @@ class GenerateDiplomeByFiliereView(APIView):
         )
     
 
-class AnnulerDiplomeView(APIView):
+
+class DiplomeAnnulationViewSet(viewsets.ViewSet):
     permission_classes = [IsAuthenticated]
 
-    def post(self, request, diplome_id):
-        diplome = get_object_or_404(Diplome, id=diplome_id)
+    def get_object(self, pk):
+        return get_object_or_404(Diplome, pk=pk)
+
+    @action(detail=True, methods=["post"])
+    def annuler(self, request, pk=None):
+        diplome = self.get_object(pk)
 
         if diplome.est_annule:
             return Response(
@@ -587,20 +560,39 @@ class AnnulerDiplomeView(APIView):
         raison = request.data.get("raison_annulation")
         if not raison:
             return Response(
-                {"error": "Raison d'annulation requise"},
+                {"error": "Raison d'annulation obligatoire"},
                 status=status.HTTP_400_BAD_REQUEST
             )
 
         diplome.est_annule = True
-        diplome.annule_a = datetime.now()
+        diplome.annule_a = now()
         diplome.raison_annulation = raison
         diplome.save()
 
         return Response({
-            "message": "Diplôme annulé avec succès",
-            "annule_a": diplome.annule_a,
-            "raison": diplome.raison_annulation
-        })
+            "status": "annule",
+            "message": "Diplôme annulé avec succès"
+        }, status=200)
+
+    @action(detail=True, methods=["post"])
+    def unannuler(self, request, pk=None):
+        diplome = self.get_object(pk)
+
+        if not diplome.est_annule:
+            return Response(
+                {"error": "Diplôme déjà actif"},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        diplome.est_annule = False
+        diplome.annule_a = None
+        diplome.raison_annulation = ""
+        diplome.save()
+
+        return Response({
+            "status": "unannule",
+            "message": "Diplôme réactivé avec succès"
+        }, status=200)
 
 
 
@@ -636,17 +628,19 @@ class PublicVerificationView(APIView):
                 Verification.objects.create(
                     diplome=diplome,
                     adresse_ip=ip,
-                    statut="echec"
+                    statut="failed"
                 )
-                return Response({
+                response = Response({
                     "valid": False,
                     "error": "Diplôme annulé",
                     "raison_annulation": diplome.raison_annulation,
                     "annule_a": diplome.annule_a
                 }, status=410)
+                response['Cache-Control'] = 'no-cache, no-store, must-revalidate'
+                return response
 
             Verification.objects.create(diplome=diplome, adresse_ip=ip, statut="succes")
-            return Response({
+            response = Response({
                 "valid": True,
                 "nom": diplome.etudiant.nom_prenom_fr,
                 "matricule": diplome.etudiant.matricule,
@@ -656,14 +650,20 @@ class PublicVerificationView(APIView):
                 "annee": diplome.annee_obtention,
                 "verification_uuid": diplome.verification_uuid
             })
+            response['Cache-Control'] = 'no-cache, no-store, must-revalidate'
+            return response
+            
         except Diplome.DoesNotExist:
             Verification.objects.create(diplome=None, adresse_ip=ip, statut="failed")
-            return Response({"valid": False, "error": "Diplôme invalide"}, status=404)
-        
+            response = Response({"valid": False, "error": "Diplôme invalide"}, status=404)
+            response['Cache-Control'] = 'no-cache, no-store, must-revalidate'
+            return response
+
 
 
 class VerifyUploadedPdfView(APIView):
     permission_classes = [AllowAny]
+
 
     def post(self, request):
         if "file" not in request.FILES:
@@ -674,11 +674,20 @@ class VerifyUploadedPdfView(APIView):
 
         pdf_file = request.FILES["file"]
 
+        # Helper function to log failed verifications
+        def failed_verification():
+            Verification.objects.create(
+                adresse_ip=request.META.get("REMOTE_ADDR"),
+                statut="failed"
+            )
+
+
         try:
             pdf_bytes = pdf_file.read()
-            reader = PdfReader(io.BytesIO(pdf_bytes))
+            reader = PdfFileReader(io.BytesIO(pdf_bytes))
 
             if not reader.embedded_signatures:
+                failed_verification()
                 return Response(
                     {"valid": False, "error": "Signature absente"},
                     status=400
@@ -690,6 +699,7 @@ class VerifyUploadedPdfView(APIView):
             sig_status = validate_pdf_signature(sig, vc)
 
             if not sig_status.valid:
+                failed_verification()
                 return Response(
                     {"valid": False, "error": "Signature invalide"},
                     status=400
@@ -702,7 +712,9 @@ class VerifyUploadedPdfView(APIView):
                 hash_signature=pdf_hash
             ).first()
 
+
             if not diplome:
+                failed_verification()
                 return Response(
                     {"valid": False, "error": "Diplôme inconnu"},
                     status=404
@@ -710,11 +722,8 @@ class VerifyUploadedPdfView(APIView):
 
             # 🔴 ANNULATION CHECK (MANDATORY)
             if diplome.est_annule:
-                Verification.objects.create(
-                    diplome=diplome,
-                    adresse_ip=request.META.get("REMOTE_ADDR"),
-                    statut="echec"
-                )
+                failed_verification()
+
                 return Response({
                     "valid": False,
                     "error": "Diplôme annulé",
@@ -739,82 +748,9 @@ class VerifyUploadedPdfView(APIView):
             })
 
         except Exception as e:
+            print(e)
             return Response(
                 {"valid": False, "error": str(e)},
                 status=500
             )
 
-
-
-
-# ===================== UPLOAD EXTERNAL PDF =====================
-
-class UploadDiplomeView(APIView):
-    permission_classes = [IsAuthenticated]
-
-    def post(self, request, etudiant_id):
-        try:
-            etudiant = get_object_or_404(Etudiant, id=etudiant_id)
-
-            if "pdf_file" not in request.FILES:
-                return Response({"error": "Aucun fichier PDF fourni"}, status=400)
-
-            pdf_file = request.FILES["pdf_file"]
-            pdf_bytes = pdf_file.read()
-
-            pdf_hash = hashlib.sha256(pdf_bytes).hexdigest()
-
-            verification_uuid = uuid.uuid4().hex
-            base_verify = getattr(settings, "FRONT_VERIFY_URL", "http://localhost:3000/verify")
-            verification_url = f"{base_verify}/{verification_uuid}/"
-
-            reader = PdfReader(io.BytesIO(pdf_bytes))
-            writer = PdfWriter()
-            for page in reader.pages:
-                writer.add_page(page)
-
-            os.makedirs(settings.DIPLOME_STORAGE_DIR, exist_ok=True)
-            qr_path = os.path.join(settings.DIPLOME_STORAGE_DIR, f"qr_{verification_uuid[:8]}.png")
-            qrcode.make(verification_url).save(qr_path)
-
-            first_page = writer.pages[0]
-            page_width = float(first_page.mediabox.width)
-            page_height = float(first_page.mediabox.height)
-
-            overlay_buffer = io.BytesIO()
-            c = canvas.Canvas(overlay_buffer, pagesize=(page_width, page_height))
-            c.drawImage(qr_path, page_width - 130, 30, width=100, height=100, mask="auto")
-            c.save()
-            overlay_buffer.seek(0)
-
-            overlay_pdf = PdfReader(overlay_buffer)
-            first_page.merge_page(overlay_pdf.pages[0])
-
-            overlay_buffer.close()
-            os.remove(qr_path)
-
-            file_name = f"uploaded_{etudiant.matricule}_{verification_uuid[:8]}.pdf"
-            file_path = os.path.join(settings.DIPLOME_STORAGE_DIR, file_name)
-
-            with open(file_path, "wb") as f:
-                writer.write(f)
-
-            Diplome.objects.create(
-                etudiant=etudiant,
-                specialite=etudiant.filiere,
-                type_diplome=request.data.get("type", "Licence"),
-                annee_obtention=request.data.get("annee", datetime.now().year),
-                hash_signature=pdf_hash,
-                verification_uuid=verification_uuid,
-                fichier_pdf=file_path
-            )
-
-            return Response({
-                "message": "Diplôme téléversé avec succès",
-                "verification_url": verification_url,
-                "uuid": verification_uuid,
-                "file_name": file_name
-            })
-
-        except Exception as e:
-            return Response({"error": str(e)}, status=500)

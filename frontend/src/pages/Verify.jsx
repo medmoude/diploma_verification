@@ -36,17 +36,15 @@ function Verify() {
 
   /* ===================== VERIFY ===================== */
   useEffect(() => {
-    if (!hasVerified.current) {
-      hasVerified.current = true;
       verifyDiplome();
-    }
   }, [verification_uuid]);
 
   const verifyDiplome = async () => {
     try {
       const response = await publicApi.get(`verify/${verification_uuid}/`);
       setData(response.data);
-    } catch {
+    } catch (error) {
+      console.log(error);
       setError("Ce diplôme n'existe pas ou est invalide.");
     } finally {
       setLoading(false);

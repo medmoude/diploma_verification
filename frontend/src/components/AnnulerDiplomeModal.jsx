@@ -15,7 +15,7 @@ export default function AnnulerDiplomeModal({ open, onClose, diplome, onSuccess 
 
     setLoading(true);
     try {
-      await api.post(`diplomes/${diplome.id}/annuler/`, {
+      await api.post(`diplomes-annulation/${diplome.id}/annuler/`, {
         raison_annulation: raison
       });
       onSuccess();

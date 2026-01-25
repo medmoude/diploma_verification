@@ -251,14 +251,18 @@ function Diplomes() {
                           <FontAwesomeIcon icon={faEye} />
                         </button>
                         <button
-                          onClick={() => {
+                          onClick={async () => {  // Make it async
                             setSelectedDiplome(d);
 
                             if (d.est_annule) {
                               if (window.confirm("Voulez-vous réactiver ce diplôme ?")) {
-                                api.post(`diplomes/${d.id}/toggle_annulation/`)
-                                  .then(refreshDiplomes)
-                                  .catch(() => alert("Erreur lors de la réactivation"));
+                                try {
+                                  await api.post(`diplomes-annulation/${d.id}/unannuler/`);
+                                  await refreshDiplomes();  // Wait for refresh
+                                  alert("Diplôme réactivé avec succès");
+                                } catch {
+                                  alert("Erreur lors de la réactivation");
+                                }
                               }
                             } else {
                               if (window.confirm("Voulez-vous annuler ce diplôme ?")) {

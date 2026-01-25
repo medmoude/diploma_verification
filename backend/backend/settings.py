@@ -10,6 +10,20 @@ MEDIA_URL = '/media/'
 
 DIPLOME_STORAGE_DIR = os.path.join(BASE_DIR, 'diplome_storage')
 
+
+DIPLOMA_CERT_PATH = os.path.join(
+    BASE_DIR,
+    "config_keys",
+    "diploma_cert.pem"
+)
+
+DIPLOMA_PRIVATE_KEY_PATH = os.path.join(
+    BASE_DIR,
+    "config_keys",
+    "diploma_private.key"
+)
+
+
 FRONT_VERIFY_URL = "http://localhost:3000/verify"
 
 
