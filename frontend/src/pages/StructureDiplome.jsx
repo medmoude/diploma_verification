@@ -81,7 +81,7 @@ export default function StructureDiplome() {
           <div 
             className="relative bg-white shadow-2xl mx-auto overflow-hidden" 
             style={{ 
-              width: '280mm', 
+              width: '250mm', 
               Height: '260mm', 
               padding: '35mm 17mm', // Adjusted for visual breathing room
               backgroundImage: `url(${structure.image_border.startsWith('http') ? structure.image_border : `${BACKEND_URL}${structure.image_border}`})`,

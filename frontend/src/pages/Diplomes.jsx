@@ -7,15 +7,21 @@ import {
   faDownload,
   faQrcode,
   faPlus,
-  faTrash
-} from "@fortawesome/free-solid-svg-icons";
+  faBan
+} 
+
+from "@fortawesome/free-solid-svg-icons";
 import Pagination from "../components/Pagination";
+import AnnulerDiplomeModal from "../components/AnnulerDiplomeModal";
 
 function Diplomes() {
   const [diplomes, setDiplomes] = useState([]);
   const [etudiants, setEtudiants] = useState([]);
   const [filieres, setFilieres] = useState([]);
   const [annees, setAnnees] = useState([]);
+  const [selectedDiplome, setSelectedDiplome] = useState(null);
+  const [annulerOpen, setAnnulerOpen] = useState(false);
+
 
   const [selectedEtudiant, setSelectedEtudiant] = useState("");
   const [selectedFiliere, setSelectedFiliere] = useState("");
@@ -51,6 +57,7 @@ function Diplomes() {
     };
     fetchAll();
   }, []);
+
 
   const refreshDiplomes = async () => {
     const res = await api.get("diplomes/");
@@ -108,17 +115,32 @@ function Diplomes() {
       if (!search) return true;
       const etu = etudiants.find(e => e.id === d.etudiant);
       if (!etu) return false;
-      const fullName = `${etu.nom_prenom_fr}`.toLowerCase();
-      const matricule = etu.matricule?.toLowerCase() || "";
-      return fullName.includes(search.toLowerCase()) || matricule.includes(search.toLowerCase());
+
+      const fullName = etu.nom_prenom_fr.toLowerCase();
+      const matricule = String(etu.matricule || "");
+
+      return (
+        fullName.includes(search.toLowerCase()) ||
+        matricule.includes(search)
+      );
     })
     .filter(d => !selectedType || d.type_diplome === selectedType)
-    .filter(d => !selectedAnnee || d.annee_obtention === selectedAnnee)
+    .filter(d => {
+      if (!selectedAnnee) return true;
+      const etu = etudiants.find(e => e.id === d.etudiant);
+      return etu ? etu.annee_universitaire === Number(selectedAnnee) : false;
+    })
     .filter(d => {
       if (!selectedFiliere) return true;
       const etu = etudiants.find(e => e.id === d.etudiant);
-      return etu ? etu.filiere === selectedFiliere : false;
+      return etu ? etu.filiere === Number(selectedFiliere) : false;
     });
+
+    useEffect(() => {
+      const maxPage = Math.max(1, Math.ceil(filteredDiplomes.length / pageSize));
+      if (page > maxPage) setPage(1);
+    }, [filteredDiplomes.length, pageSize]);
+
 
   const totalPages = Math.ceil(filteredDiplomes.length / pageSize);
   const displayedDiplomes = filteredDiplomes.slice((page - 1) * pageSize, page * pageSize);
@@ -164,11 +186,12 @@ function Diplomes() {
           <select
             value={selectedAnnee}
             onChange={e => { setSelectedAnnee(e.target.value); setPage(1); }}
-            className="border px-3 py-2 rounded"
           >
             <option value="">Toutes années</option>
             {annees.map(a => (
-              <option key={a.id} value={a.code_annee}>{a.code_annee}</option>
+              <option key={a.id} value={a.id}>
+                {a.code_annee}
+              </option>
             ))}
           </select>
 
@@ -216,17 +239,53 @@ function Diplomes() {
                         {etu ? filieres.find(f => f.id === etu.filiere)?.code_filiere || "—" : "Inconnu"}
                       </td>
                       <td className="px-4 py-2">{d.type_diplome}</td>
-                      <td className="px-4 py-2">{d.annee_obtention}</td>
+                      <td className="px-4 py-2">{annees.find(a => a.id === etu.annee_universitaire)?.code_annee}</td>
                       <td className="px-4 py-2 flex gap-2">
                         <button onClick={() => handleDownload(d.verification_uuid)} className="text-blue-600">
                           <FontAwesomeIcon icon={faDownload} />
                         </button>
-                        <a href={`http://localhost:3000/verify/${d.verification_uuid}/`} target="_blank" rel="noreferrer" className="text-green-600">
+                        <button
+                          onClick={() => window.open(`http://localhost:3000/verify/${d.verification_uuid}/`, "_blank")}
+                          className="text-green-600 p-2"
+                        >
                           <FontAwesomeIcon icon={faEye} />
-                        </a>
-                        <button disabled title="Suppression non implémentée" className="text-gray-400 cursor-not-allowed">
-                          <FontAwesomeIcon icon={faTrash} />
                         </button>
+                        <button
+                          onClick={() => {
+                            setSelectedDiplome(d);
+
+                            if (d.est_annule) {
+                              if (window.confirm("Voulez-vous réactiver ce diplôme ?")) {
+                                api.post(`diplomes/${d.id}/toggle_annulation/`)
+                                  .then(refreshDiplomes)
+                                  .catch(() => alert("Erreur lors de la réactivation"));
+                              }
+                            } else {
+                              if (window.confirm("Voulez-vous annuler ce diplôme ?")) {
+                                setAnnulerOpen(true);
+                              }
+                            }
+                          }}
+                          className={`p-2 ${
+                            d.est_annule
+                              ? "text-green-600 hover:text-green-800"
+                              : "text-red-600 hover:text-red-800"
+                          }`}
+                          title={d.est_annule ? "Réactiver le diplôme" : "Annuler le diplôme"}
+                        >
+                          <FontAwesomeIcon icon={faBan} />
+                        </button>
+
+                        <span
+                          className={`px-2 py-2 rounded-full text-xs font-semibold ${
+                            d.est_annule
+                              ? "bg-red-100 text-red-700"
+                              : "bg-green-100 text-green-700"
+                          }`}
+                        >
+                          {d.est_annule ? "Annulé" : "Valide"}
+                        </span>
+
                       </td>
                     </tr>
                   );
@@ -319,6 +378,14 @@ function Diplomes() {
             </div>
           </div>
         )}
+
+        <AnnulerDiplomeModal
+          open={annulerOpen}
+          diplome={selectedDiplome}
+          onClose={() => setAnnulerOpen(false)}
+          onSuccess={refreshDiplomes}
+        />
+
 
       </div>
     </MainLayout>

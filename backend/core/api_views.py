@@ -15,6 +15,7 @@ import uuid
 import hashlib
 import io
 from datetime import datetime
+from django.utils.timezone import now
 
 import pandas as pd
 import qrcode
@@ -37,6 +38,10 @@ from PyPDF2 import PdfReader, PdfWriter
 
 # Security (optional)
 from core.security.pdf_signer import sign_pdf
+from pyhanko.sign.validation import validate_pdf_signature
+from pyhanko_certvalidator import ValidationContext
+from pyhanko.pdf_utils.reader import PdfFileReader
+
 
 # Models & Serializers
 from .models import Diplome, Etudiant, Verification, Filiere, AnneeUniversitaire, StructureDiplome
@@ -187,9 +192,44 @@ class EtudiantViewSet(viewsets.ModelViewSet):
         return response
 
 
+
 class DiplomeViewSet(viewsets.ModelViewSet):
     queryset = Diplome.objects.all()
     serializer_class = DiplomeSerializer
+
+    @action(detail=True, methods=["post"], permission_classes=[IsAuthenticated])
+    def toggle_annulation(self, request, pk=None):
+        diplome = self.get_object()
+
+        if diplome.est_annule:
+            # 🔄 UNANNULER
+            diplome.est_annule = False
+            diplome.annule_a = None
+            diplome.raison_annulation = ""
+            diplome.save()
+
+            return Response({
+                "status": "unannule",
+                "message": "Diplôme réactivé avec succès"
+            })
+
+        # 🔴 ANNULER
+        raison = request.data.get("raison_annulation")
+        if not raison:
+            return Response(
+                {"error": "Raison d'annulation obligatoire"},
+                status=400
+            )
+
+        diplome.est_annule = True
+        diplome.annule_a = now()
+        diplome.raison_annulation = raison
+        diplome.save()
+
+        return Response({
+            "status": "annule",
+            "message": "Diplôme annulé avec succès"
+        })
 
 
 class StructureDiplomeViewSet(viewsets.ModelViewSet):
@@ -277,9 +317,9 @@ class GenerateDiplomeView(APIView):
 
         # French
         c.setFont("Times-Bold", 13)
-        c.drawCentredString(width / 2 - 50 * mm, header_y, (structure.republique_fr or "").upper())
-        c.setFont("Times-Italic", 8)
-        c.drawCentredString(width / 2 - 50 * mm, header_y - 4 * mm, structure.devise_fr or "")
+        c.drawCentredString(width / 2 - 30 * mm, header_y, (structure.republique_fr or "").upper())
+        c.setFont("Times-Italic", 9)
+        c.drawCentredString(width / 2 - 30 * mm, header_y - 4 * mm, structure.devise_fr or "")
         c.setFont("Times-Roman", 13)
         c.drawCentredString(width / 2 - 30 * mm, header_y - 10 * mm, structure.ministere_fr or "")
         c.drawCentredString(width / 2 - 40 * mm, header_y - 15 * mm, structure.groupe_fr or "")
@@ -301,11 +341,11 @@ class GenerateDiplomeView(APIView):
 
         c.setFont("Times-Bold", 24)
         c.drawCentredString(width / 2 - 60 * mm, title_y, (structure.diplome_titre_fr or "").upper())
-        c.line(width / 2 - 110 * mm, title_y - 2 * mm, width / 2 - 10 * mm, title_y - 2 * mm)
+        # c.line(width / 2 - 110 * mm, title_y - 2 * mm, width / 2 - 10 * mm, title_y - 2 * mm)
 
         c.setFont(ar_bold, 24)
         c.drawCentredString(width / 2 + 60 * mm, title_y, reshape_text(structure.diplome_titre_ar))
-        c.line(width / 2 + 10 * mm, title_y - 2 * mm, width / 2 + 110 * mm, title_y - 2 * mm)
+        # c.line(width / 2 + 10 * mm, title_y - 2 * mm, width / 2 + 110 * mm, title_y - 2 * mm)
 
         # --- BODY ---
         styles = getSampleStyleSheet()
@@ -530,6 +570,38 @@ class GenerateDiplomeByFiliereView(APIView):
             {"message": "Génération en masse terminée", "total": etudiants.count(), "generes": generated, "ignores": skipped},
             status=200
         )
+    
+
+class AnnulerDiplomeView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request, diplome_id):
+        diplome = get_object_or_404(Diplome, id=diplome_id)
+
+        if diplome.est_annule:
+            return Response(
+                {"error": "Diplôme déjà annulé"},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        raison = request.data.get("raison_annulation")
+        if not raison:
+            return Response(
+                {"error": "Raison d'annulation requise"},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        diplome.est_annule = True
+        diplome.annule_a = datetime.now()
+        diplome.raison_annulation = raison
+        diplome.save()
+
+        return Response({
+            "message": "Diplôme annulé avec succès",
+            "annule_a": diplome.annule_a,
+            "raison": diplome.raison_annulation
+        })
+
 
 
 # ===================== DOWNLOAD & VERIFY =====================
@@ -559,14 +631,27 @@ class PublicVerificationView(APIView):
         ip = request.META.get("REMOTE_ADDR")
         try:
             diplome = Diplome.objects.get(verification_uuid=verification_uuid)
+
+            if diplome.est_annule:
+                Verification.objects.create(
+                    diplome=diplome,
+                    adresse_ip=ip,
+                    statut="echec"
+                )
+                return Response({
+                    "valid": False,
+                    "error": "Diplôme annulé",
+                    "raison_annulation": diplome.raison_annulation,
+                    "annule_a": diplome.annule_a
+                }, status=410)
+
             Verification.objects.create(diplome=diplome, adresse_ip=ip, statut="succes")
             return Response({
                 "valid": True,
                 "nom": diplome.etudiant.nom_prenom_fr,
-                "prenom": "",
                 "matricule": diplome.etudiant.matricule,
                 "email": diplome.etudiant.email,
-                "filiere": diplome.etudiant.filiere.nom_filiere,
+                "filiere": diplome.etudiant.filiere.nom_filiere_fr,
                 "date_emission": diplome.date_televersement,
                 "annee": diplome.annee_obtention,
                 "verification_uuid": diplome.verification_uuid
@@ -574,6 +659,92 @@ class PublicVerificationView(APIView):
         except Diplome.DoesNotExist:
             Verification.objects.create(diplome=None, adresse_ip=ip, statut="failed")
             return Response({"valid": False, "error": "Diplôme invalide"}, status=404)
+        
+
+
+class VerifyUploadedPdfView(APIView):
+    permission_classes = [AllowAny]
+
+    def post(self, request):
+        if "file" not in request.FILES:
+            return Response(
+                {"valid": False, "error": "Aucun fichier fourni"},
+                status=400
+            )
+
+        pdf_file = request.FILES["file"]
+
+        try:
+            pdf_bytes = pdf_file.read()
+            reader = PdfReader(io.BytesIO(pdf_bytes))
+
+            if not reader.embedded_signatures:
+                return Response(
+                    {"valid": False, "error": "Signature absente"},
+                    status=400
+                )
+
+            sig = reader.embedded_signatures[0]
+
+            vc = ValidationContext()
+            sig_status = validate_pdf_signature(sig, vc)
+
+            if not sig_status.valid:
+                return Response(
+                    {"valid": False, "error": "Signature invalide"},
+                    status=400
+                )
+
+            # 🔒 Bind PDF to database record
+            pdf_hash = hashlib.sha256(pdf_bytes).hexdigest()
+
+            diplome = Diplome.objects.filter(
+                hash_signature=pdf_hash
+            ).first()
+
+            if not diplome:
+                return Response(
+                    {"valid": False, "error": "Diplôme inconnu"},
+                    status=404
+                )
+
+            # 🔴 ANNULATION CHECK (MANDATORY)
+            if diplome.est_annule:
+                Verification.objects.create(
+                    diplome=diplome,
+                    adresse_ip=request.META.get("REMOTE_ADDR"),
+                    statut="echec"
+                )
+                return Response({
+                    "valid": False,
+                    "error": "Diplôme annulé",
+                    "raison_annulation": diplome.raison_annulation,
+                    "annule_a": diplome.annule_a
+                }, status=410)
+
+            # ✅ VALID
+            Verification.objects.create(
+                diplome=diplome,
+                adresse_ip=request.META.get("REMOTE_ADDR"),
+                statut="succes"
+            )
+
+            return Response({
+                "valid": True,
+                "nom": diplome.etudiant.nom_prenom_fr,
+                "matricule": diplome.etudiant.matricule,
+                "filiere": diplome.etudiant.filiere.nom_filiere_fr,
+                "annee": diplome.annee_obtention,
+                "verification_uuid": diplome.verification_uuid
+            })
+
+        except Exception as e:
+            return Response(
+                {"valid": False, "error": str(e)},
+                status=500
+            )
+
+
 
 
 # ===================== UPLOAD EXTERNAL PDF =====================

@@ -64,7 +64,7 @@ class VerificationSerializer(serializers.ModelSerializer):
                 "nom_prenom_fr": d.nom_prenom_fr,
                 "matricule": d.matricule,
                 "email": d.email,
-                "filiere": d.filiere.nom_filiere,
+                "filiere": d.filiere.nom_filiere_fr,
             }
         return None
 

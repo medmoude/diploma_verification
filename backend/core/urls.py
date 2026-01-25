@@ -6,11 +6,13 @@ from .api_views import (
     VerificationViewSet,
     AnneUniversitaireViewSet,
     DiplomeViewSet,
+    DownloadDiplomeView,
+    AnnulerDiplomeView,
     StructureDiplomeViewSet,
     GenerateDiplomeView,
     GenerateDiplomeByFiliereView,
-    DownloadDiplomeView,
     PublicVerificationView,
+    VerifyUploadedPdfView,
     UploadDiplomeView
 )
 
@@ -27,10 +29,13 @@ urlpatterns = [
     path('diplomes/generate/<int:etudiant_id>/', GenerateDiplomeView.as_view(), name='generate-diplome'),
     path('diplomes/upload/<int:etudiant_id>/', UploadDiplomeView.as_view(), name='upload-diplome'),
     path('diplomes/download/<str:verification_uuid>/', DownloadDiplomeView.as_view(), name='download-diplome'),
+    path("diplomes/<int:diplome_id>/annuler/", AnnulerDiplomeView.as_view(), name="annuler-diplome"),
+
     path("diplomes/generate-by-filiere/", GenerateDiplomeByFiliereView.as_view(), name="generate-by-filiere"),
 
     # Public verification endpoint (no auth required)
     path('verify/<str:verification_uuid>/', PublicVerificationView.as_view(), name='public-verify'),
+    path("verify-file/", VerifyUploadedPdfView.as_view(), name="verify-file")
     
     # Include all router URLs
 ] + router.urls

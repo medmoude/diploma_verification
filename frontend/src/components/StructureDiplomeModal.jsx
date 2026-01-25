@@ -103,8 +103,8 @@ export default function StructureDiplomeModal({ structure, onClose, onSaved }) {
           <input name="diplome_titre_fr" placeholder="Titre du Diplôme (FR)" value={form.diplome_titre_fr} onChange={handleChange} className="p-2 border rounded col-span-1" />
           <input name="diplome_titre_ar" placeholder="Titre du Diplôme (AR)" value={form.diplome_titre_ar} onChange={handleChange} className="p-2 border rounded rtl col-span-1" />
           
-          <textarea name="citations_juridiques_fr" placeholder="Citations Juridiques (FR)" value={form.citations_juridiques_fr} onChange={handleChange} className="p-2 border rounded h-52 col-span-1" />
-          <textarea name="citations_juridiques_ar" placeholder="Citations Juridiques (AR)" value={form.citations_juridiques_ar} onChange={handleChange} className="p-2 border rounded h-52 rtl col-span-1" />
+          <textarea name="citations_juridiques_fr" placeholder="Citations Juridiques (FR)" value={form.citations_juridiques_fr} onChange={handleChange} className="p-2 border rounded h-72 col-span-1" />
+          <textarea name="citations_juridiques_ar" placeholder="Citations Juridiques (AR)" value={form.citations_juridiques_ar} onChange={handleChange} className="p-2 border rounded h-72 rtl col-span-1" />
 
           <div className="col-span-2 font-semibold text-blue-600 mt-2">Procès-verbal et Jury</div>
           <input name="label_pv_jury_fr" placeholder="Texte PV (FR)" value={form.label_pv_jury_fr} onChange={handleChange} className="p-2 border rounded" />

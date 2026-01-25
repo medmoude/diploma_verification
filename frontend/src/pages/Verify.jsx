@@ -102,6 +102,7 @@ function Verify() {
   }
 
   if (error || !data?.valid) {
+    console.log(error.data);
     return (
       <div className="min-h-screen bg-gradient-to-br from-red-50 to-pink-50 flex items-center justify-center p-4">
         <div className="max-w-md w-full bg-white rounded-2xl shadow-2xl p-8 text-center">
@@ -130,7 +131,7 @@ function Verify() {
   const verificationUrl = `http://localhost:3000/verify/${verification_uuid}/`;
 
   const {
-    nom_prenom_fr,
+    nom,
     matricule,
     email,
     filiere,
@@ -202,7 +203,7 @@ function Verify() {
               <SectionHeader icon={faUserGraduate} title="Informations de l’étudiant" />
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <InfoCard label="Nom complet" value={`${nom_prenom_fr}`} icon={faIdCard} />
+                <InfoCard label="Nom complet" value={`${nom}`} icon={faIdCard} />
                 <InfoCard label="Matricule" value={matricule} icon={faIdCard} />
                 <InfoCard label="Filière" value={filiere} icon={faSchool} />
                 <InfoCard label="Email" value={email} icon={faEnvelope} />
