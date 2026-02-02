@@ -13,6 +13,9 @@ from .api_views import (
     GenerateDiplomeByFiliereView,
     PublicVerificationView,
     VerifyUploadedPdfView,
+    ProfileView,
+    ChangePasswordView,
+    DashboardStatsView
 )
 
 router = DefaultRouter()
@@ -34,7 +37,14 @@ urlpatterns = [
 
     # Public verification endpoint (no auth required)
     path('verify/<str:verification_uuid>/', PublicVerificationView.as_view(), name='public-verify'),
-    path("verify-file/", VerifyUploadedPdfView.as_view(), name="verify-file")
+    path("verify-file/", VerifyUploadedPdfView.as_view(), name="verify-file"),
+
+    # Profile and passwords
+    path("profile/", ProfileView.as_view()),
+    path("change-password/", ChangePasswordView.as_view()),
+
+    #Statistics and visuals for the Dashboard
+    path("dashboard-stats/", DashboardStatsView.as_view()),
     
     # Include all router URLs
 ] + router.urls

@@ -4,11 +4,18 @@ from rest_framework.decorators import action
 from rest_framework.response import Response
 from rest_framework.views import APIView
 from rest_framework.permissions import IsAuthenticated, AllowAny
+from django.contrib.auth.models import User
 
 from django.http import FileResponse, HttpResponse
 from django.shortcuts import get_object_or_404
 from django.conf import settings
 from django.db import IntegrityError
+
+from django.db.models import Count
+from django.db.models.functions import TruncDate
+
+from django.db import transaction
+from django.db.models import Max
 
 import os
 import uuid
@@ -136,6 +143,16 @@ def register_fonts():
     return ("Amiri", "Amiri-Bold", "Amiri-Italic", "Amiri-BoldItalic")
 
 
+def next_diplome_number(year):
+    with transaction.atomic():
+        last = (
+            Diplome.objects
+            .filter(annee_obtention=year)
+            .aggregate(m=Max("numero_diplome"))["m"]
+        )
+        return (last or 0) + 1
+
+
 # ===================== VIEWSETS =====================
 
 class EtudiantViewSet(viewsets.ModelViewSet):
@@ -243,8 +260,8 @@ class GenerateDiplomeView(APIView):
             return Response({"error": "Diplôme déjà généré"}, status=400)
 
         verification_uuid = uuid.uuid4().hex
-        base_verify = getattr(settings, "FRONT_VERIFY_URL", "http://localhost:3000/verify")
-        verification_url = f"{base_verify}/{verification_uuid}/"
+        base = getattr(settings, "FRONTEND_URL", "http://localhost:3000")
+        verification_url = f"{base}/verify/{verification_uuid}/"
         os.makedirs(settings.DIPLOME_STORAGE_DIR, exist_ok=True)
 
         # fonts
@@ -339,6 +356,7 @@ class GenerateDiplomeView(APIView):
         )
 
         date_birth = etudiant.date_naissance.strftime("%d/%m/%Y") if etudiant.date_naissance else "..."
+        numero_diplome = next_diplome_number(annee_obtention)
 
         fr_html = f"""
         <para>
@@ -350,7 +368,7 @@ class GenerateDiplomeView(APIView):
         né le : <b>{date_birth}</b> à : <b>{etudiant.lieu_naissance_fr or ""}</b><br/>
         au titre de l’année universitaire <b>{etudiant.annee_universitaire.code_annee}</b>,
         avec la mention : <b>{etudiant.mention_fr or ""}</b>.<br/><br/>
-        Diplôme n° : <b>ISMS-{str(annee_obtention)[-2:]}-{etudiant.id}</b>
+        Diplôme n° : <b>ISMS-{str(annee_obtention)[-2:]}-{numero_diplome}</b>
         </para>
         """
 
@@ -386,7 +404,7 @@ class GenerateDiplomeView(APIView):
         <b>{ltr(etudiant.annee_universitaire.code_annee)}</b> {reshape_text("برسم السنة الجامعية: ")}
         <br/><br/>
 
-        {ltr(f"<b> ISMS-{str(annee_obtention)[-2:]}-{etudiant.id} </b>")} {reshape_text("الشهادة رقم:")}
+        {ltr(f"<b> {numero_diplome}-{str(annee_obtention)[-2:]}-إ.ع.م </b>")} {reshape_text("الشهادة رقم:")}
 
         </para>
         """
@@ -418,7 +436,9 @@ class GenerateDiplomeView(APIView):
         qr_mem.seek(0)
 
         sig_y = 65 * mm
-        now_str = datetime.now().strftime("%d/%m/%Y")
+        verify_date = structure.date_verification or datetime.now().date()
+        now_str = verify_date.strftime("%d/%m/%Y")
+
 
         c.setFont("Times-Bold", 10)
         c.drawCentredString(width / 2, sig_y, f"Vérifié à Nouakchott, le {now_str}")
@@ -494,7 +514,7 @@ class GenerateDiplomeView(APIView):
             pdf_hash = hashlib.sha256(f.read()).hexdigest()
 
         Diplome.objects.create(
-            numero_diplome=24,  # TODO
+            numero_diplome=numero_diplome,
             etudiant=etudiant,
             specialite=etudiant.filiere,
             type_diplome="Licence",
@@ -753,4 +773,99 @@ class VerifyUploadedPdfView(APIView):
                 {"valid": False, "error": str(e)},
                 status=500
             )
+        
+
+
+# ========= profile and password change =======
+
+class ProfileView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        u = request.user
+        return Response({
+            "username": u.username,
+            "email": u.email,
+            "first_name": u.first_name,
+            "last_name": u.last_name,
+        })
+
+    def put(self, request):
+        u = request.user
+        u.email = request.data.get("email", u.email)
+        u.first_name = request.data.get("first_name", u.first_name)
+        u.last_name = request.data.get("last_name", u.last_name)
+        u.save()
+        return Response({"message": "Profil mis à jour"})
+
+
+
+class ChangePasswordView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request):
+        user = request.user
+        old = request.data.get("old_password")
+        new = request.data.get("new_password")
+
+        if not user.check_password(old):
+            return Response({"error": "Ancien mot de passe incorrect"}, status=400)
+
+        user.set_password(new)
+        user.save()
+        return Response({"message": "Mot de passe modifié"})
+    
+
+
+# Statistics and visuals
+class DashboardStatsView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        from .models import Verification, Diplome, Filiere
+
+        # Verifications per day
+        verifications_by_day = (
+            Verification.objects
+            .annotate(day=TruncDate("date_verification"))
+            .values("day")
+            .annotate(total=Count("id"))
+            .order_by("day")
+        )
+
+        # Success vs Failed
+        status_counts = (
+            Verification.objects
+            .values("statut")
+            .annotate(count=Count("id"))
+        )
+
+        # Diplomes per filiere
+        diplome_by_filiere = (
+            Diplome.objects
+            .values("specialite__nom_filiere_fr")
+            .annotate(count=Count("id"))
+        )
+
+        # Diplomes per year
+        diplome_by_year = (
+            Diplome.objects
+            .values("annee_obtention")
+            .annotate(count=Count("id"))
+            .order_by("annee_obtention")
+        )
+
+        # Annulated diplomas
+        annules = Diplome.objects.filter(est_annule=True).count()
+
+        return Response({
+            "verifications_by_day": verifications_by_day,
+            "status_counts": status_counts,
+            "diplome_by_filiere": diplome_by_filiere,
+            "diplome_by_year": diplome_by_year,
+            "annules": annules,
+        })
+
+
+
 

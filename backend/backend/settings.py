@@ -24,7 +24,7 @@ DIPLOMA_PRIVATE_KEY_PATH = os.path.join(
 )
 
 
-FRONT_VERIFY_URL = "http://localhost:3000/verify"
+FRONTEND_URL = os.getenv("FRONTEND_URL", "http://localhost:3000")
 
 
 # Quick-start development settings - unsuitable for production

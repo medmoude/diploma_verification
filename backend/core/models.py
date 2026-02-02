@@ -81,6 +81,14 @@ class Diplome(models.Model):
     annule_a = models.DateTimeField(null=True, blank=True)
     raison_annulation = models.TextField(blank=True)
 
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(
+                fields=["annee_obtention", "numero_diplome"],
+                name="unique_diplome_per_year"
+            )
+        ]
+
 
     def get_verification_url(self):
         return f"http://localhost:3000/verify/{self.verification_uuid}/"
