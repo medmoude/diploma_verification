@@ -1,16 +1,22 @@
-# mobile
+# Mobile – Diploma Verification App (Flutter)
 
-A new Flutter project.
+This Flutter application is the **mobile client** of the Diploma Generation & Verification System.
 
-## Getting Started
+It allows users to:
+- Verify a diploma using its **QR code / UUID**
+- Upload a **PDF diploma** and check its authenticity
+- Consume the same **secured Django REST API** used by the web (React) app
 
-This project is a starting point for a Flutter application.
+---
 
-A few resources to get you started if this is your first Flutter project:
+## Features
+-  Secure API consumption (JWT-ready)
+-  PDF diploma verification
+-  QR / UUID-based verification
+-  Works with the same backend as the web app
 
-- [Lab: Write your first Flutter app](https://docs.flutter.dev/get-started/codelab)
-- [Cookbook: Useful Flutter samples](https://docs.flutter.dev/cookbook)
+---
 
-For help getting started with Flutter development, view the
-[online documentation](https://docs.flutter.dev/), which offers tutorials,
-samples, guidance on mobile development, and a full API reference.
+## Backend
+The app connects to a Django REST API.
+
