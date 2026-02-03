@@ -82,5 +82,6 @@ export const publicApi = axios.create({
 });
 
 export const BACKEND_URL = "http://localhost:8000"
+export const DOMAIN = "http://localhost:3000"
 
 export default api;

@@ -45,7 +45,7 @@ export default function AnnulerDiplomeModal({ open, onClose, diplome, onSuccess 
         <div className="flex justify-end gap-3 mt-4">
           <button
             onClick={onClose}
-            className="px-4 py-2 text-gray-600"
+            className="bg-gray-200 px-4 py-2 rounded hover:bg-gray-300 hover:scale-y-110 transition-all duration-300 ease-in-out"
           >
             Annuler
           </button>
@@ -53,7 +53,7 @@ export default function AnnulerDiplomeModal({ open, onClose, diplome, onSuccess 
           <button
             onClick={submit}
             disabled={loading}
-            className="px-4 py-2 bg-red-600 text-white rounded-lg"
+            className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 hover:scale-y-110 transition-all duration-300 ease-in-out"
           >
             Confirmer
           </button>

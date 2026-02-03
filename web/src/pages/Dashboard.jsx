@@ -23,6 +23,64 @@ export default function Dashboard() {
     <MainLayout title="Dashboard">
       <div className="grid gap-8">
 
+        {/* Show totals quickly */}
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+          {[
+            ["Étudiants", data.students_total],
+            ["Diplômes", data.diplomes_total],
+            ["Vérifications", data.verifications_total],
+            ["7 derniers jours", data.verifications_last_7_days],
+          ].map(([label, value]) => (
+            <div key={label} className="bg-white p-4 rounded-xl shadow text-center">
+              <div className="text-sm text-gray-500">{label}</div>
+              <div className="text-3xl font-bold">{value}</div>
+            </div>
+          ))}
+        </div>
+
+        {/* Students per Filiere */}
+        <div className="bg-white p-6 rounded-xl shadow">
+          <h2 className="text-xl font-semibold mb-4">Étudiants par Filière</h2>
+          <ResponsiveContainer width="100%" height={300}>
+            <BarChart data={data.students_by_filiere}>
+              <CartesianGrid strokeDasharray="3 3" />
+              <XAxis dataKey="filiere__nom_filiere_fr" />
+              <YAxis />
+              <Tooltip />
+              <Bar dataKey="count" fill="#22C55E" />
+            </BarChart>
+          </ResponsiveContainer>
+        </div>
+
+        {/* Students per Academic Year */}
+        <div className="bg-white p-6 rounded-xl shadow">
+          <h2 className="text-xl font-semibold mb-4">Étudiants par Année Universitaire</h2>
+          <ResponsiveContainer width="100%" height={300}>
+            <BarChart data={data.students_by_annee}>
+              <CartesianGrid strokeDasharray="3 3" />
+              <XAxis dataKey="annee_universitaire__code_annee" />
+              <YAxis />
+              <Tooltip />
+              <Bar dataKey="count" fill="#0EA5E9" />
+            </BarChart>
+          </ResponsiveContainer>
+        </div>
+
+        {/* Age distribution */}
+        <div className="bg-white p-6 rounded-xl shadow">
+          <h2 className="text-xl font-semibold mb-4">Distribution des âges</h2>
+          <ResponsiveContainer width="100%" height={300}>
+            <BarChart data={data.age_distribution}>
+              <CartesianGrid strokeDasharray="3 3" />
+              <XAxis dataKey="age" />
+              <YAxis />
+              <Tooltip />
+              <Bar dataKey="count" fill="#A855F7" />
+            </BarChart>
+          </ResponsiveContainer>
+          <p className="text-sm text-gray-500 mt-2">Âge moyen: {Number(data.avg_age || 0).toFixed(1)}</p>
+        </div>
+
         {/* Verifications per day */}
         <div className="bg-white p-6 rounded-xl shadow">
           <h2 className="text-xl font-semibold mb-4">Vérifications par jour</h2>

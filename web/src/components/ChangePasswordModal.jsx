@@ -74,8 +74,31 @@ export default function ChangePasswordModal({ open, onClose }) {
       }, 1200);
 
     } catch (err) {
-      setAlert({ type: "error", msg: "Ancien mot de passe incorrect" });
+      const status = err.response?.status;
+      const apiError = err.response?.data?.error;
+
+      // If backend sends a list of password policy errors
+      if (Array.isArray(apiError)) {
+        setAlert({ type: "error", msg: apiError.join(" ") });
+        return;
+      }
+
+      // If backend sends a string error
+      if (typeof apiError === "string" && apiError.trim()) {
+        setAlert({ type: "error", msg: apiError });
+        return;
+      }
+
+      // Friendly fallback by status
+      if (status === 400) {
+        setAlert({ type: "error", msg: "Données invalides. Vérifiez les champs." });
+      } else if (status === 401) {
+        setAlert({ type: "error", msg: "Session expirée. Reconnectez-vous." });
+      } else {
+        setAlert({ type: "error", msg: "Erreur serveur. Réessayez plus tard." });
+      }
     }
+
   };
 
   return (

@@ -1,7 +1,6 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:file_picker/file_picker.dart';
-import 'package:permission_handler/permission_handler.dart';
 import '../services/api_service.dart';
 import 'result_screen.dart';
 
@@ -14,17 +13,6 @@ class _UploadPdfScreenState extends State<UploadPdfScreen> {
   bool isLoading = false;
 
   Future<void> pickFile() async {
-    // Request storage permission on Android
-    if (Platform.isAndroid) {
-      var status = await Permission.storage.request();
-      if (!status.isGranted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text("Permission de stockage requise")),
-        );
-        return;
-      }
-    }
-
     try {
       final result = await FilePicker.platform.pickFiles(
         type: FileType.custom,

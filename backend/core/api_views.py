@@ -6,13 +6,22 @@ from rest_framework.views import APIView
 from rest_framework.permissions import IsAuthenticated, AllowAny
 from django.contrib.auth.models import User
 
+from django.core.validators import validate_email
+from django.core.exceptions import ValidationError
+from django.contrib.auth.password_validation import validate_password
+from django.contrib.auth import update_session_auth_hash
+
+from django_ratelimit.decorators import ratelimit
+from django.utils.decorators import method_decorator
+import re
+from datetime import timedelta
+from django.db.models import Count, Avg, F, Func, Value, IntegerField
+from django.db.models.functions import TruncDate, Now, Cast
+
 from django.http import FileResponse, HttpResponse
 from django.shortcuts import get_object_or_404
 from django.conf import settings
 from django.db import IntegrityError
-
-from django.db.models import Count
-from django.db.models.functions import TruncDate
 
 from django.db import transaction
 from django.db.models import Max
@@ -616,7 +625,7 @@ class DiplomeAnnulationViewSet(viewsets.ViewSet):
 
 
 
-# ===================== DOWNLOAD & VERIFY =====================
+# ===================== DOWNLOAD Diplômes =====================
 
 class DownloadDiplomeView(APIView):
     permission_classes = [IsAuthenticated]
@@ -634,13 +643,205 @@ class DownloadDiplomeView(APIView):
             as_attachment=True,
             filename=os.path.basename(pdf_path),
         )
+    
 
 
+
+# ========= profile and password change =======
+class ProfileView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        u = request.user
+        return Response({
+            "username": u.username,
+            "email": u.email,
+            "first_name": u.first_name,
+            "last_name": u.last_name,
+        })
+
+    def put(self, request):
+        u = request.user
+
+        # Email validation + uniqueness (only if email provided)
+        if "email" in request.data:
+            email = (request.data.get("email") or "").strip().lower()
+
+            try:
+                validate_email(email)
+            except ValidationError:
+                return Response({"error": "Email invalide"}, status=400)
+
+            if User.objects.filter(email=email).exclude(pk=u.pk).exists():
+                return Response({"error": "Email déjà utilisé"}, status=400)
+
+            u.email = email
+        else:
+            # keep previous behavior if email not sent
+            u.email = request.data.get("email", u.email)
+
+        # functionnality for names
+        u.first_name = request.data.get("first_name", u.first_name)
+        u.last_name = request.data.get("last_name", u.last_name)
+
+        u.save()
+        return Response({"message": "Profil mis à jour"})
+
+
+class ChangePasswordView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request):
+        user = request.user
+        old = request.data.get("old_password")
+        new = request.data.get("new_password")
+
+        if not user.check_password(old):
+            print(user.check_password(old))
+            return Response({"error": "Ancien mot de passe incorrect"}, status=400)
+
+        # Password policy (uses AUTH_PASSWORD_VALIDATORS in settings.py)
+        try:
+            validate_password(new, user=user)
+        except ValidationError as e:
+            return Response({"error": list(e.messages)}, status=400)
+
+        user.set_password(new)
+        user.save()
+
+        # Keep user logged in if you're using session auth (safe even with JWT)
+        update_session_auth_hash(request, user)
+
+        return Response({"message": "Mot de passe modifié"})
+
+    
+
+
+# Statistics and visuals
+class DashboardStatsView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        from .models import Verification, Diplome, Filiere, Etudiant, AnneeUniversitaire
+
+        verifications_by_day = (
+            Verification.objects
+            .annotate(day=TruncDate("date_verification"))
+            .values("day")
+            .annotate(total=Count("id"))
+            .order_by("day")
+        )
+
+        status_counts = (
+            Verification.objects
+            .values("statut")
+            .annotate(count=Count("id"))
+        )
+
+        diplome_by_filiere = (
+            Diplome.objects
+            .values("specialite__nom_filiere_fr")
+            .annotate(count=Count("id"))
+        )
+
+        diplome_by_year = (
+            Diplome.objects
+            .values("annee_obtention")
+            .annotate(count=Count("id"))
+            .order_by("annee_obtention")
+        )
+
+        annules = Diplome.objects.filter(est_annule=True).count()
+
+        # students per filiere -----------------
+        students_by_filiere = (
+            Etudiant.objects
+            .values("filiere__nom_filiere_fr")
+            .annotate(count=Count("id"))
+            .order_by("filiere__nom_filiere_fr")
+        )
+
+        # students per academic year -----------------
+        students_by_annee = (
+            Etudiant.objects
+            .values("annee_universitaire__code_annee")
+            .annotate(count=Count("id"))
+            .order_by("annee_universitaire__code_annee")
+        )
+
+        # age distribution (PostgreSQL) -----------------
+        age_years = Cast(
+            Func(
+                Value("year"),
+                Func(Now(), F("date_naissance"), function="age"),
+                function="date_part",
+            ),
+            IntegerField(),
+        )
+
+        age_distribution = (
+            Etudiant.objects
+            .annotate(age=age_years)
+            .values("age")
+            .annotate(count=Count("id"))
+            .order_by("age")
+        )
+
+        avg_age = Etudiant.objects.annotate(age=age_years).aggregate(avg=Avg("age"))["avg"]
+
+        # Optional useful extra statistics -----------------
+        totals = {
+            "students_total": Etudiant.objects.count(),
+            "diplomes_total": Diplome.objects.count(),
+            "verifications_total": Verification.objects.count(),
+            "verifications_last_7_days": Verification.objects.filter(
+                date_verification__gte=Now() - timedelta(days=7)
+            ).count(),
+        }
+
+        return Response({
+            "verifications_by_day": verifications_by_day,
+            "status_counts": status_counts,
+            "diplome_by_filiere": diplome_by_filiere,
+            "diplome_by_year": diplome_by_year,
+            "annules": annules,
+
+            # new
+            "students_by_filiere": students_by_filiere,
+            "students_by_annee": students_by_annee,
+            "age_distribution": age_distribution,
+            "avg_age": avg_age,
+            **totals,
+        })
+
+
+
+# ==== verify diplôme ====
 class PublicVerificationView(APIView):
     permission_classes = [AllowAny]
 
+    @method_decorator(ratelimit(key="ip", rate="5/m", block=False))
     def get(self, request, verification_uuid):
+
         ip = request.META.get("REMOTE_ADDR")
+
+        if getattr(request, "limited", False):
+            Verification.objects.create(
+                diplome=None,
+                adresse_ip=ip,
+                statut="failed"
+            )
+
+            return Response(
+            {"error": "rate_limit_exceeded"},
+            status=429
+            )
+
+        if not re.fullmatch(r"[0-9a-f]{32}", verification_uuid):
+            return Response({"valid": False}, status=400)
+
+
+
         try:
             diplome = Diplome.objects.get(verification_uuid=verification_uuid)
 
@@ -684,7 +885,7 @@ class PublicVerificationView(APIView):
 class VerifyUploadedPdfView(APIView):
     permission_classes = [AllowAny]
 
-
+    @method_decorator(ratelimit(key="ip", rate="5/m", block=True))
     def post(self, request):
         if "file" not in request.FILES:
             return Response(
@@ -693,11 +894,12 @@ class VerifyUploadedPdfView(APIView):
             )
 
         pdf_file = request.FILES["file"]
+        ip = request.META.get("REMOTE_ADDR")
 
         # Helper function to log failed verifications
         def failed_verification():
             Verification.objects.create(
-                adresse_ip=request.META.get("REMOTE_ADDR"),
+                adresse_ip=ip,
                 statut="failed"
             )
 
@@ -773,98 +975,6 @@ class VerifyUploadedPdfView(APIView):
                 {"valid": False, "error": str(e)},
                 status=500
             )
-        
-
-
-# ========= profile and password change =======
-
-class ProfileView(APIView):
-    permission_classes = [IsAuthenticated]
-
-    def get(self, request):
-        u = request.user
-        return Response({
-            "username": u.username,
-            "email": u.email,
-            "first_name": u.first_name,
-            "last_name": u.last_name,
-        })
-
-    def put(self, request):
-        u = request.user
-        u.email = request.data.get("email", u.email)
-        u.first_name = request.data.get("first_name", u.first_name)
-        u.last_name = request.data.get("last_name", u.last_name)
-        u.save()
-        return Response({"message": "Profil mis à jour"})
-
-
-
-class ChangePasswordView(APIView):
-    permission_classes = [IsAuthenticated]
-
-    def post(self, request):
-        user = request.user
-        old = request.data.get("old_password")
-        new = request.data.get("new_password")
-
-        if not user.check_password(old):
-            return Response({"error": "Ancien mot de passe incorrect"}, status=400)
-
-        user.set_password(new)
-        user.save()
-        return Response({"message": "Mot de passe modifié"})
-    
-
-
-# Statistics and visuals
-class DashboardStatsView(APIView):
-    permission_classes = [IsAuthenticated]
-
-    def get(self, request):
-        from .models import Verification, Diplome, Filiere
-
-        # Verifications per day
-        verifications_by_day = (
-            Verification.objects
-            .annotate(day=TruncDate("date_verification"))
-            .values("day")
-            .annotate(total=Count("id"))
-            .order_by("day")
-        )
-
-        # Success vs Failed
-        status_counts = (
-            Verification.objects
-            .values("statut")
-            .annotate(count=Count("id"))
-        )
-
-        # Diplomes per filiere
-        diplome_by_filiere = (
-            Diplome.objects
-            .values("specialite__nom_filiere_fr")
-            .annotate(count=Count("id"))
-        )
-
-        # Diplomes per year
-        diplome_by_year = (
-            Diplome.objects
-            .values("annee_obtention")
-            .annotate(count=Count("id"))
-            .order_by("annee_obtention")
-        )
-
-        # Annulated diplomas
-        annules = Diplome.objects.filter(est_annule=True).count()
-
-        return Response({
-            "verifications_by_day": verifications_by_day,
-            "status_counts": status_counts,
-            "diplome_by_filiere": diplome_by_filiere,
-            "diplome_by_year": diplome_by_year,
-            "annules": annules,
-        })
 
 
 

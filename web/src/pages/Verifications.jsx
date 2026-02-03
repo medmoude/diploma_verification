@@ -148,7 +148,7 @@ export default function Verifications() {
 
           <div className="flex items-center justify-between mt-4">
 
-            <div className="flex justify-center flex-1">
+            <div className="mb-7 flex justify-center flex-1">
               <Pagination
                 currentPage={page}
                 totalPages={totalPages}

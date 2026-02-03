@@ -102,7 +102,7 @@ export default function Annees() {
           <h1 className="text-2xl font-bold">Gestion des Années Universitaires</h1>
           <button
             onClick={handleAdd}
-            className="flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition"
+            className="flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 hover:scale-y-110 transition-all duration-300 ease-in-out"
           >
             <FontAwesomeIcon icon={faPlus} className="mr-2" /> Ajouter
           </button>
@@ -125,12 +125,14 @@ export default function Annees() {
                     <button
                       onClick={() => handleEdit(a)}
                       className="px-3 py-1 bg-yellow-400 text-white rounded hover:bg-yellow-500 transition"
+                      title="Modifier"
                     >
                       <FontAwesomeIcon icon={faEdit} />
                     </button>
                     <button
                       onClick={() => handleDelete(a.id)}
                       className="px-3 py-1 bg-red-500 text-white rounded hover:bg-red-600 transition"
+                      title="Supprimer"
                     >
                       <FontAwesomeIcon icon={faTrash} />
                     </button>

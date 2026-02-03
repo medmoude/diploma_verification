@@ -5,13 +5,14 @@ import {
   faCog,
   faChevronDown,
   faChevronUp,
-  faGraduationCap,
-  faCalendarAlt,
   faHome,
   faUsers,
-  faCertificate,
-  faShieldAlt,
-  faSignOutAlt
+  faListCheck,
+  faSignOutAlt,
+  faSitemap,
+  faGraduationCap,
+  faCalendarAlt,
+  faFileLines,
 } from "@fortawesome/free-solid-svg-icons";
 
 export default function Sidebar() {
@@ -37,8 +38,8 @@ export default function Sidebar() {
   const mainLinks = [
     { name: "Dashboard", path: "/dashboard", icon: faHome },
     { name: "Etudiants", path: "/etudiants", icon: faUsers },
-    { name: "Diplômes", path: "/diplomes", icon: faCertificate },
-    { name: "Vérifications", path: "/verifications", icon: faShieldAlt },
+    { name: "Diplômes", path: "/diplomes", icon: faGraduationCap },
+    { name: "Vérifications", path: "/verifications", icon: faListCheck },
   ];
 
   const handleLogout = () => {
@@ -61,7 +62,7 @@ export default function Sidebar() {
         {/* Logo */}
         <div className="flex items-center justify-center h-16 border-b px-4">
           <img alt="ISMS logo" src="/isms.jpeg" className="w-10 h-10" />
-          <span className="text-xl font-bold ml-2">Admin</span>
+          <span className="text-xl font-bold ml-2">Espace admin</span>
         </div>
 
         {/* Navigation */}
@@ -71,8 +72,8 @@ export default function Sidebar() {
             <Link
               key={l.path}
               to={l.path}
-              className={`flex items-center px-3 py-3 my-1 rounded transition hover:bg-gray-200 ${
-                path === l.path ? "bg-gray-200 font-semibold" : ""
+              className={`flex items-center px-3 py-3 my-1 rounded hover:bg-gray-200 hover:translate-x-3 transition-all duration-300 ease-in-out ${
+                path === l.path ? "bg-gray-200 font-semibold translate-x-3" : ""
               }`}
               onClick={() => setOpen(false)}
             >
@@ -86,7 +87,7 @@ export default function Sidebar() {
             <button
               onClick={() => setSettingsOpen(!settingsOpen)}
               className={`flex items-center justify-between w-full px-3 py-3 my-1 rounded hover:bg-gray-200 transition ${
-                path === "/filieres" || path === "/annees_universitaires" ? "bg-gray-200 font-semibold" : ""
+                path === "/filieres" || path === "/annees_universitaires" || path ==="/structure-diplome" ? "bg-gray-200 font-semibold" : ""
               }`}
             >
               <div className="flex items-center">
@@ -103,18 +104,18 @@ export default function Sidebar() {
               <div className="ml-8 space-y-1">
                 <Link
                   to="/filieres"
-                  className={`flex items-center px-3 py-2 my-1 rounded hover:bg-gray-200 transition ${
-                    path === "/filieres" ? "bg-gray-200 font-semibold" : ""
+                  className={`flex items-center px-3 py-2 my-1 rounded hover:bg-gray-200 hover:translate-x-3 transition-all duration-300 ease-in-out ${
+                    path === "/filieres" ? "bg-gray-200 font-semibold translate-x-3" : ""
                   }`}
                   onClick={() => setOpen(false)}
                 >
-                  <FontAwesomeIcon icon={faGraduationCap} className="w-4 h-4 mr-3 text-gray-500" />
+                  <FontAwesomeIcon icon={faSitemap} className="w-4 h-4 mr-3 text-gray-500" />
                   <span className="text-sm">Gestion Filières</span>
                 </Link>
                 <Link
                   to="/annees_universitaires"
-                  className={`flex items-center px-3 py-2 my-1 rounded hover:bg-gray-200 transition ${
-                    path === "/annees_universitaires" ? "bg-gray-200 font-semibold" : ""
+                  className={`flex items-center px-3 py-2 my-1 rounded hover:bg-gray-200 hover:translate-x-3 transition-all duration-300 ease-in-out ${
+                    path === "/annees_universitaires" ? "bg-gray-200 font-semibold translate-x-3" : ""
                   }`}
                   onClick={() => setOpen(false)}
                 >
@@ -123,12 +124,12 @@ export default function Sidebar() {
                 </Link>
                 <Link
                   to="/structure-diplome"
-                  className={`flex items-center px-3 py-2 my-1 rounded hover:bg-gray-200 transition ${
-                    path === "/structure-diplome" ? "bg-gray-200 font-semibold" : ""
+                  className={`flex items-center px-3 py-2 my-1 rounded hover:bg-gray-200 hover:translate-x-3 transition-all duration-300 ease-in-out ${
+                    path === "/structure-diplome" ? "bg-gray-200 font-semibold translate-x-3" : ""
                   }`}
                   onClick={() => setOpen(false)}
                 >
-                  <FontAwesomeIcon icon={faCertificate} className="w-4 h-4 mr-3 text-gray-500" />
+                  <FontAwesomeIcon icon={faFileLines} className="w-4 h-4 mr-3 text-gray-500" />
                   <span className="text-sm">Structure du diplôme</span>
                 </Link>
               </div>
@@ -138,7 +139,7 @@ export default function Sidebar() {
         <div className="px-4 pb-4">
           <button
             onClick={handleLogout}
-            className="flex items-center w-full px-3 py-3 rounded hover:bg-red-200 text-red-600 transition"
+            className="flex items-center w-full px-3 py-3 rounded hover:bg-red-200 text-red-600 hover:translate-x-3 transition-all duration-300 ease-in-out"
           >
             <FontAwesomeIcon icon={faSignOutAlt} className="w-5 h-5 mr-3" />
             <span>Déconnexion</span>
@@ -146,13 +147,13 @@ export default function Sidebar() {
         </div>
       </div>
 
-      {/* Mobile Toggle Button */}
+      {/* Mobile Toggle Button
       <button
         className="lg:hidden p-2 m-2 bg-gray-300 fixed top-2 left-2 z-30 rounded-md shadow-md"
         onClick={() => setOpen(!open)}
       >
         {open ? "✕" : "☰"}
-      </button>
+      </button> */}
     </>
   );
 }

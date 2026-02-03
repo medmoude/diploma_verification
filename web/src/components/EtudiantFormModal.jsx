@@ -324,8 +324,8 @@ export default function EtudiantFormModal({ open, onClose, refresh, etudiant }) 
           </div>
 
           <div className="flex justify-end gap-2 pt-4">
-            <button type="button" onClick={onClose} className="px-4 py-2 border rounded">Annuler</button>
-            <button type="submit" className="px-4 py-2 bg-blue-600 text-white rounded">{isEdit ? "Modifier" : "Ajouter"}</button>
+            <button type="button" onClick={onClose} className="bg-gray-200 px-4 py-2 border rounded hover:bg-gray-300 hover:scale-y-110 transition-all duration-300 ease-in-out">Annuler</button>
+            <button type="submit" className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 hover:scale-y-110 transition-all duration-300 ease-in-out">{isEdit ? "Modifier" : "Ajouter"}</button>
           </div>
         </form>
       </div>

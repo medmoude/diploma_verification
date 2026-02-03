@@ -69,7 +69,7 @@ export default function EtudiantDetailsModal({
       <div className="bg-white rounded-xl shadow-lg w-full max-w-xl p-6 relative">
 
         {/* Close */}
-        <button onClick={onClose} className="absolute top-3 right-3">
+        <button onClick={onClose} className="absolute top-5 right-5 hover:text-red-500 hover:scale-110 transition-all duration-300 ease-in-out">
           <FontAwesomeIcon icon={faXmark} />
         </button>
 
@@ -122,14 +122,14 @@ export default function EtudiantDetailsModal({
           {diplomes.length === 0 ? (
             <button
               onClick={generateDiplome}
-              className="px-4 py-2 bg-blue-600 text-white rounded"
+              className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 hover:scale-y-110 transition-all duration-300 ease-in-out"
             >
               Générer diplôme
             </button>
           ) : (
             <button
               disabled
-              className="px-4 py-2 bg-blue-300 text-white rounded"
+              className="px-4 py-2 bg-blue-300 text-white rounded hover:cursor-not-allowed"
             >
               Générer diplôme
             </button>
@@ -139,7 +139,7 @@ export default function EtudiantDetailsModal({
           <div className="flex gap-2">
             <button
               onClick={() => onEdit(etudiant)}
-              className="px-4 py-2 bg-yellow-500 text-white rounded"
+              className="px-4 py-2 bg-yellow-500 text-white rounded hover:bg-yellow-600 hover:scale-y-110 transition-all duration-300 ease-in-out"
               title="Modifier"
             >
               <FontAwesomeIcon icon={faEdit} />
@@ -147,7 +147,7 @@ export default function EtudiantDetailsModal({
 
             <button
               onClick={deleteEtudiant}
-              className="px-4 py-2 bg-red-500 text-white rounded"
+              className="px-4 py-2 bg-red-500 text-white rounded hover:bg-red-600 hover:scale-y-110 transition-all duration-300 ease-in-out"
               title="Supprimer"
             >
               <FontAwesomeIcon icon={faTrash} />

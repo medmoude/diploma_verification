@@ -108,14 +108,14 @@ export default function AnneeFormModal({ onClose, onSave, editingAnnee }) {
             <button
               type="button"
               onClick={onClose}
-              className="px-4 py-2 bg-gray-200 rounded hover:bg-gray-300"
+              className="px-4 py-2 bg-gray-200 rounded hover:bg-gray-300 hover:scale-y-110 transition-all duration-300 ease-in-out"
             >
               Annuler
             </button>
             <button
               type="submit"
               disabled={loading}
-              className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
+              className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 hover:scale-y-110 transition-all duration-300 ease-in-out"
             >
               {loading ? "Enregistrement..." : "Enregistrer"}
             </button>

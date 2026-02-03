@@ -2,6 +2,7 @@
 import { useState, useEffect, useRef } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { publicApi } from "../api/axios";
+import { DOMAIN } from "../api/axios";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import {
   faCheckCircle,
@@ -33,15 +34,23 @@ function Verify() {
 
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
   const [copied, setCopied] = useState(false);
   const [showQR, setShowQR] = useState(false);
+  const [errorType, setErrorType] = useState(null);
+  const [error, setError] = useState(null);
+
 
   const hasVerified = useRef(false);
 
   /* ===================== VERIFY ===================== */
   useEffect(() => {
-      verifyDiplome();
+    hasVerified.current = false; // reset when UUID changes
+  }, [verification_uuid]);
+
+  useEffect(() => {
+    if (hasVerified.current) return;
+    hasVerified.current = true;
+    verifyDiplome();
   }, [verification_uuid]);
 
   const verifyDiplome = async () => {
@@ -49,8 +58,16 @@ function Verify() {
       const response = await publicApi.get(`verify/${verification_uuid}/`);
       setData(response.data);
     } catch (error) {
-      console.log(error);
-      setError("Ce diplôme n'existe pas ou est invalide.");
+      if (error.response?.status === 429) {
+        setErrorType("rate_limit");
+        setError("Trop de tentatives. Veuillez réessayer plus tard.");
+      } else if (error.response?.status === 404) {
+        setErrorType("invalid");
+        setError("Ce diplôme n'existe pas ou est invalide.");
+      } else {
+        setErrorType("generic");
+        setError("Erreur de vérification.");
+      }
     } finally {
       setLoading(false);
     }
@@ -68,28 +85,6 @@ function Verify() {
     window.print();
   };
 
-  const downloadPDF = async () => {
-    try {
-      const response = await publicApi.get(
-        `diplomes/download/${verification_uuid}/`,
-        { responseType: "blob" }
-      );
-
-      const url = window.URL.createObjectURL(new Blob([response.data]));
-      const link = document.createElement("a");
-      link.href = url;
-      link.setAttribute(
-        "download",
-        `diplome_${verification_uuid.substring(0, 8)}.pdf`
-      );
-      document.body.appendChild(link);
-      link.click();
-      link.remove();
-    } catch (err) {
-      console.log(err);
-      alert("Impossible de télécharger le diplôme PDF");
-    }
-  };
 
   /* ===================== STATES ===================== */
 
@@ -110,7 +105,7 @@ function Verify() {
     );
   }
 
-  if (error || !data?.valid) {
+  if (error) {
     console.log(error.data);
     return (
       <div className="min-h-screen bg-gradient-to-br from-red-50 to-pink-50 flex items-center justify-center p-4">
@@ -119,7 +114,9 @@ function Verify() {
             <FontAwesomeIcon icon={faTimesCircle} className="text-5xl text-red-600" />
           </div>
           <h1 className="text-3xl font-bold text-gray-800 mb-4">
-            Diplôme invalide
+            {errorType === "rate_limit"
+              ? "Trop de tentatives"
+              : "Diplôme invalide"}
           </h1>
           <p className="text-gray-600 mb-4">
             {error || "Ce diplôme n'a pas pu être vérifié."}
@@ -127,7 +124,11 @@ function Verify() {
           <div className="bg-red-50 border border-red-200 rounded-lg p-4 mb-6">
             <div className="flex items-center justify-center gap-2 text-red-700 text-sm">
               <FontAwesomeIcon icon={faShieldAlt} />
-              <span>Vérification de sécurité échouée</span>
+              <span>
+                {errorType === "rate_limit"
+                  ? "Limite de requêtes atteinte"
+                  : "Vérification de sécurité échouée"}
+              </span>
             </div>
           </div>
           <button
@@ -143,7 +144,7 @@ function Verify() {
 
   /* ===================== DATA ===================== */
 
-  const verificationUrl = `http://localhost:3000/verify/${verification_uuid}/`;
+  const verificationUrl = `${DOMAIN}/verify/${verification_uuid}/`;
 
   const {
     nom,

@@ -57,7 +57,7 @@ export default function Filieres() {
               setEditingFiliere(null);
               setModalOpen(true);
             }}
-            className="flex items-center gap-2 px-4 py-2 rounded-lg bg-blue-600 text-white shadow-sm hover:bg-blue-700 hover:shadow transition"
+            className="flex items-center gap-2 px-4 py-2 rounded-lg bg-blue-600 text-white shadow-sm hover:bg-blue-700 hover:scale-y-110 transition-all duration-300 ease-in-out"
           >
             <FontAwesomeIcon icon={faPlus} />
             Ajouter Filière
@@ -94,13 +94,15 @@ export default function Filieres() {
                           setEditingFiliere(f);
                           setModalOpen(true);
                         }}
-                        className="px-3 py-1.5 rounded-md bg-yellow-500 text-white hover:bg-yellow-600 transition"
+                        className="px-3 py-1.5 rounded-md bg-yellow-500 text-white hover:bg-yellow-600 "
+                        title="Modifier"
                       >
                         <FontAwesomeIcon icon={faEdit} />
                       </button>
                       <button
                         onClick={() => handleDelete(f.id)}
                         className="px-3 py-1.5 rounded-md bg-red-500 text-white hover:bg-red-600 transition"
+                        title="Supprimer"
                       >
                         <FontAwesomeIcon icon={faTrash} />
                       </button>

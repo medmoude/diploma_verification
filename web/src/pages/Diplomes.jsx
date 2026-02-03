@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import api from "../api/axios";
 import MainLayout from "../components/Layout/MainLayout";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
+import { DOMAIN } from "../api/axios";
 import {
   faEye,
   faDownload,
@@ -15,7 +16,6 @@ import Pagination from "../components/Pagination";
 import AnnulerDiplomeModal from "../components/AnnulerDiplomeModal";
 
 function Diplomes() {
-  const DOMAIN = "http://localhost:3000"
 
   const [diplomes, setDiplomes] = useState([]);
   const [etudiants, setEtudiants] = useState([]);
@@ -155,10 +155,10 @@ function Diplomes() {
         <div className="flex justify-between items-center">
           <h1 className="text-2xl font-bold">Diplômes</h1>
           <div className="flex gap-3">
-            <button onClick={() => setShowGenerateModal(true)} className="px-4 py-2 bg-blue-600 text-white rounded-lg">
+            <button onClick={() => setShowGenerateModal(true)} className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 hover:scale-y-110 transition-all duration-300 ease-in-out">
               <FontAwesomeIcon icon={faPlus} /> Générer (1 étudiant)
             </button>
-            <button onClick={() => setShowBulkGenerateModal(true)} className="px-4 py-2 bg-indigo-600 text-white rounded-lg">
+            <button onClick={() => setShowBulkGenerateModal(true)} className="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indingo-700 hover:scale-y-110 transition-all duration-300 ease-in-out">
               <FontAwesomeIcon icon={faQrcode} /> Générer par filière
             </button>
           </div>
@@ -243,12 +243,15 @@ function Diplomes() {
                       <td className="px-4 py-2">{d.type_diplome}</td>
                       <td className="px-4 py-2">{annees.find(a => a.id === etu.annee_universitaire)?.code_annee}</td>
                       <td className="px-4 py-2 flex gap-2">
-                        <button onClick={() => handleDownload(d.verification_uuid)} className="text-blue-600">
+                        <button 
+                          onClick={() => handleDownload(d.verification_uuid)} 
+                          className="p-2 text-blue-600 hover:text-blue-700 hover:scale-110 transition-all duration-300 ease-in-out"
+                        >
                           <FontAwesomeIcon icon={faDownload} />
                         </button>
                         <button
                           onClick={() => window.open(`${DOMAIN}/verify/${d.verification_uuid}/`, "_blank")}
-                          className="text-green-600 p-2"
+                          className="text-green-600 p-2 hover:text-green-700 hover:scale-110 transition-all duration-300 ease-in-out"
                         >
                           <FontAwesomeIcon icon={faEye} />
                         </button>
@@ -274,8 +277,8 @@ function Diplomes() {
                           }}
                           className={`p-2 ${
                             d.est_annule
-                              ? "text-green-600 hover:text-green-800"
-                              : "text-red-600 hover:text-red-800"
+                              ? "text-green-600 hover:text-green-800 hover:scale-110 transition-all duration-300 ease-in-out"
+                              : "text-red-600 hover:text-red-800 hover:scale-110 transition-all duration-300 ease-in-out"
                           }`}
                           title={d.est_annule ? "Réactiver le diplôme" : "Annuler le diplôme"}
                         >
@@ -333,10 +336,15 @@ function Diplomes() {
               </select>
 
               <div className="flex justify-end gap-3 mt-6">
-                <button onClick={() => setShowGenerateModal(false)}>Annuler</button>
+                <button 
+                  onClick={() => setShowGenerateModal(false)}
+                  className="bg-gray-200 px-4 py-2 rounded hover:bg-gray-300 hover:scale-y-110 transition-all duration-300 ease-in-out"
+                >
+                  Annuler
+                </button>
                 <button
                   onClick={handleGenerate}
-                  className="bg-blue-600 text-white px-4 py-2 rounded"
+                  className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700 hover:scale-y-110 transition-all duration-300 ease-in-out"
                 >
                   Générer
                 </button>
@@ -373,11 +381,15 @@ function Diplomes() {
               </select>
 
               <div className="flex justify-end gap-3 mt-6">
-                <button onClick={() => setShowBulkGenerateModal(false)}>Annuler</button>
+                <button 
+                  onClick={() => setShowBulkGenerateModal(false)}
+                  className="bg-gray-200 px-4 py-2 rounded hover:bg-gray-300 hover:scale-y-110 transition-all duration-300 ease-in-out"
+                >
+                  Annuler
+                </button>
                 <button
                   onClick={handleGenerateByFiliere}
-                  className="bg-indigo-600 text-white px-4 py-2 rounded"
-                >
+                  className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700 hover:scale-y-110 transition-all duration-300 ease-in-out"                >
                   Générer
                 </button>
               </div>

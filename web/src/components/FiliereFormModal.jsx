@@ -85,13 +85,13 @@ export default function FiliereFormModal({ open, setOpen, filiere, refresh }) {
             <button
               type="button"
               onClick={() => setOpen(false)}
-              className="px-4 py-2 rounded bg-gray-200 hover:bg-gray-300"
+              className="px-4 py-2 rounded bg-gray-200 hover:bg-gray-300 hover:scale-y-110 transition-all duration-300 ease-in-out"
             >
               Annuler
             </button>
             <button
               type="submit"
-              className="px-4 py-2 rounded bg-blue-600 text-white hover:bg-blue-700"
+              className="px-4 py-2 rounded bg-blue-600 text-white hover:bg-blue-700 hover:scale-y-110 transition-all duration-300 ease-in-out"
             >
               {loading ? "Enregistrement..." : filiere ? "Modifier" : "Ajouter"}
             </button>
