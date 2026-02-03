@@ -38,3 +38,7 @@ tzdata==2025.3
 tzlocal==5.3.1
 uritools==6.0.1
 urllib3==2.6.3
+gunicorn
+dj-database-url
+whitenoise
+

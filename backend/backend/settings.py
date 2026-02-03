@@ -1,6 +1,9 @@
 from datetime import timedelta
 from pathlib import Path
 import os
+import dj_database_url
+
+
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -11,17 +14,21 @@ MEDIA_URL = '/media/'
 DIPLOME_STORAGE_DIR = os.path.join(BASE_DIR, 'diplome_storage')
 
 
-DIPLOMA_CERT_PATH = os.path.join(
-    BASE_DIR,
-    "config_keys",
-    "diploma_cert.pem"
-)
+# DIPLOMA_CERT_PATH = os.path.join(
+#     BASE_DIR,
+#     "config_keys",
+#     "diploma_cert.pem"
+# )
 
-DIPLOMA_PRIVATE_KEY_PATH = os.path.join(
-    BASE_DIR,
-    "config_keys",
-    "diploma_private.key"
-)
+# DIPLOMA_PRIVATE_KEY_PATH = os.path.join(
+#     BASE_DIR,
+#     "config_keys",
+#     "diploma_private.key"
+# )
+
+DIPLOMA_CERT_PATH = os.getenv("DIPLOMA_CERT_PATH")
+DIPLOMA_PRIVATE_KEY_PATH = os.getenv("DIPLOMA_PRIVATE_KEY_PATH")
+
 
 
 FRONTEND_URL = os.getenv("FRONTEND_URL", "http://localhost:3000")
@@ -31,12 +38,12 @@ FRONTEND_URL = os.getenv("FRONTEND_URL", "http://localhost:3000")
 # See https://docs.djangoproject.com/en/6.0/howto/deployment/checklist/
 
 # SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = 'django-insecure-ib8f4sy2^6utx5#^m%221ef*tx*)mr0c@xa91oc*h6f+z%@sf*'
+SECRET_KEY = os.getenv("SECRET_KEY")
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True
+DEBUG = os.getenv("DEBUG", "False") == "True"
 
-ALLOWED_HOSTS = []
+ALLOWED_HOSTS = ["*"]
 
 
 # Application definition
@@ -57,6 +64,7 @@ INSTALLED_APPS = [
 MIDDLEWARE = [
     'corsheaders.middleware.CorsMiddleware',
     'django.middleware.security.SecurityMiddleware',
+    'whitenoise.middleware.WhiteNoiseMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
@@ -96,16 +104,32 @@ WSGI_APPLICATION = 'backend.wsgi.application'
 
 # Database
 # https://docs.djangoproject.com/en/6.0/ref/settings/#databases
+
+ # For localhost configuration
+# DATABASES = { 
+#     'default': { 
+#         'ENGINE': 'django.db.backends.postgresql', 
+#         'NAME': 'diploma_verification', # Name of your PostgreSQL database 
+#         'USER': 'postgres', # Username with access to the database 
+#         'PASSWORD': 'admin', # Password for the user 
+#         'HOST': 'localhost', # The database server's address (e.g., 'localhost' or an IP) 
+#         'PORT': '5432', # The port number (default is 5432) 
+#         } 
+#     }
+
 DATABASES = {
-    'default': {
-        'ENGINE': 'django.db.backends.postgresql',
-        'NAME': 'diploma_verification',      # Name of your PostgreSQL database
-        'USER': 'postgres',      # Username with access to the database
-        'PASSWORD': 'admin',  # Password for the user
-        'HOST': 'localhost',        # The database server's address (e.g., 'localhost' or an IP)
-        'PORT': '5432',          # The port number (default is 5432)
-    }
+    "default": dj_database_url.config(
+        default=os.getenv("DATABASE_URL")
+    )
 }
+
+STATIC_URL = "/static/"
+STATIC_ROOT = os.path.join(BASE_DIR, "staticfiles")
+
+STATICFILES_DIRS = [
+    os.path.join(BASE_DIR, "backend", "static"),
+]
+
 
 
 
@@ -136,7 +160,6 @@ USE_TZ = True
 # Static files (CSS, JavaScript, Images)
 # https://docs.djangoproject.com/en/6.0/howto/static-files/
 
-STATIC_URL = 'static/'
 
 # JWT STUFF
 
