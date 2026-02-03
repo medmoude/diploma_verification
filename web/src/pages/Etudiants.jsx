@@ -210,7 +210,7 @@ export default function Etudiants() {
 
   /* ===================== RENDER ===================== */
   return (
-    <MainLayout title="Étudiants">
+    <MainLayout title="Gestion des étudiants">
 
       {alert && (
         <Alert

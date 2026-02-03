@@ -49,7 +49,7 @@ export default function Filieres() {
         {/* Header */}
         <div className="flex justify-between items-center mb-6">
           <div>
-            <h1 className="text-2xl font-semibold text-gray-800">Gestion des Filières</h1>
+            <h1 className="text-2xl font-semibold text-gray-800">Filières</h1>
             <p className="text-sm text-gray-500">Liste et gestion des filières disponibles</p>
           </div>
           <button

@@ -88,7 +88,7 @@ export default function Annees() {
   if (loading) return <p className="p-6">Chargement...</p>;
 
   return (
-    <MainLayout>
+    <MainLayout title="Gestion des années universitaires">
       <div className="p-6 max-w-5xl mx-auto">
         
         {message.text && (
@@ -99,7 +99,7 @@ export default function Annees() {
 
         {/* HEADER */}
         <div className="flex justify-between items-center mb-6">
-          <h1 className="text-2xl font-bold">Gestion des Années Universitaires</h1>
+          <h1 className="text-2xl font-bold">Années Universitaires</h1>
           <button
             onClick={handleAdd}
             className="flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 hover:scale-y-110 transition-all duration-300 ease-in-out"

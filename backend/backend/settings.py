@@ -13,20 +13,24 @@ MEDIA_URL = '/media/'
 DIPLOME_STORAGE_DIR = os.path.join(BASE_DIR, 'diplome_storage')
 
 
-# DIPLOMA_CERT_PATH = os.path.join(
-#     BASE_DIR,
-#     "config_keys",
-#     "diploma_cert.pem"
-# )
+# Local version
 
-# DIPLOMA_PRIVATE_KEY_PATH = os.path.join(
-#     BASE_DIR,
-#     "config_keys",
-#     "diploma_private.key"
-# )
+DIPLOMA_CERT_PATH = os.path.join(
+    BASE_DIR,
+    "config_keys",
+    "diploma_cert.pem"
+)
 
-DIPLOMA_CERT_PATH = os.getenv("DIPLOMA_CERT_PATH")
-DIPLOMA_PRIVATE_KEY_PATH = os.getenv("DIPLOMA_PRIVATE_KEY_PATH")
+DIPLOMA_PRIVATE_KEY_PATH = os.path.join(
+    BASE_DIR,
+    "config_keys",
+    "diploma_private.key"
+)
+
+
+# Deployment version
+# DIPLOMA_CERT_PATH = os.getenv("DIPLOMA_CERT_PATH")
+# DIPLOMA_PRIVATE_KEY_PATH = os.getenv("DIPLOMA_PRIVATE_KEY_PATH")
 
 
 
@@ -37,12 +41,12 @@ FRONTEND_URL = os.getenv("FRONTEND_URL", "http://localhost:3000")
 # See https://docs.djangoproject.com/en/6.0/howto/deployment/checklist/
 
 # SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = os.getenv("SECRET_KEY")
+SECRET_KEY = os.getenv("SECRET_KEY", "secret_key")
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = os.getenv("DEBUG", "False") == "True"
+DEBUG = True
 
-ALLOWED_HOSTS = ["*"]
+ALLOWED_HOSTS = []
 
 
 # Application definition
@@ -64,6 +68,8 @@ MIDDLEWARE = [
     'corsheaders.middleware.CorsMiddleware',
     'django.middleware.security.SecurityMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
+    'csp.middleware.CSPMiddleware',
+    'django_permissions_policy.PermissionsPolicyMiddleware',
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
@@ -75,9 +81,15 @@ MIDDLEWARE = [
 CORS_ALLOW_ALL_ORIGINS = True
 
 REST_FRAMEWORK = {
- "DEFAULT_AUTHENTICATION_CLASSES": (
-   "rest_framework_simplejwt.authentication.JWTAuthentication",
- )
+    # 1. LOCK THE DOORS: Require login by default for everything
+    'DEFAULT_PERMISSION_CLASSES': [
+        'rest_framework.permissions.IsAuthenticated',
+    ],
+    # 2. KEYS TO OPEN: Allow JWT (for Frontend) AND Session (for you in Browser)
+    'DEFAULT_AUTHENTICATION_CLASSES': (
+        'rest_framework_simplejwt.authentication.JWTAuthentication',
+        'rest_framework.authentication.SessionAuthentication',
+    )
 }
 
 ROOT_URLCONF = 'backend.urls'
@@ -104,27 +116,30 @@ WSGI_APPLICATION = 'backend.wsgi.application'
 # https://docs.djangoproject.com/en/6.0/ref/settings/#databases
 
  # For localhost configuration
-# DATABASES = { 
-#     'default': { 
-#         'ENGINE': 'django.db.backends.postgresql', 
-#         'NAME': 'diploma_verification', # Name of your PostgreSQL database 
-#         'USER': 'postgres', # Username with access to the database 
-#         'PASSWORD': 'admin', # Password for the user 
-#         'HOST': 'localhost', # The database server's address (e.g., 'localhost' or an IP) 
-#         'PORT': '5432', # The port number (default is 5432) 
-#         } 
-#     }
-
-DATABASES = {
-    "default": {
-        "ENGINE": "django.db.backends.sqlite3",
-        "NAME": BASE_DIR / "db.sqlite3",
+DATABASES = { 
+    'default': { 
+        'ENGINE': 'django.db.backends.postgresql', 
+        'NAME': 'diploma_verification', # Name of your PostgreSQL database 
+        'USER': 'postgres', # Username with access to the database 
+        'PASSWORD': 'admin', # Password for the user 
+        'HOST': 'localhost', # The database server's address (e.g., 'localhost' or an IP) 
+        'PORT': '5432', # The port number (default is 5432) 
+        } 
     }
-}
+
+
+# For deployed  configuration
+
+# DATABASES = {
+#     "default": {
+#         "ENGINE": "django.db.backends.sqlite3",
+#         "NAME": BASE_DIR / "db.sqlite3",
+#     }
+# }
 
 
 STATIC_URL = "/static/"
-STATIC_ROOT = os.path.join(BASE_DIR, "staticfiles")
+STATIC_ROOT = os.path.join(BASE_DIR, "static")
 
 STATICFILES_DIRS = [
     os.path.join(BASE_DIR, "backend", "static"),
@@ -169,3 +184,52 @@ SIMPLE_JWT = {
     'ROTATE_REFRESH_TOKENS': True,
     'BLACKLIST_AFTER_ROTATION': True
 }
+
+
+# ==========================================
+# SECURITY HEADERS (commented in developpement)
+# ==========================================
+
+
+# # 0. REQUIRED for PythonAnywhere (Tells Django we are using HTTPS)
+# SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
+# #  SECURE_SSL_REDIRECT = True
+
+# # 1. HSTS (Strict-Transport-Security)
+# # Forces HTTPS. (Safe to use now that you have SSL on PythonAnywhere)
+# SECURE_HSTS_SECONDS = 31536000
+# SECURE_HSTS_INCLUDE_SUBDOMAINS = True
+# SECURE_HSTS_PRELOAD = True
+
+# # 2. X-Content-Type-Options
+# SECURE_CONTENT_TYPE_NOSNIFF = True
+
+# # 3. Referrer-Policy
+# SECURE_REFERRER_POLICY = 'strict-origin-when-cross-origin'
+
+# # 4. Content-Security-Policy (CSP)
+# # This restricts where scripts/images can load from.
+# # "self" means only files from your own domain are allowed.
+# CSP_DEFAULT_SRC = ("'self'",)
+# CSP_IMG_SRC = ("'self'", "data:") # 'data:' allows the base64 QR codes to show
+# CSP_STYLE_SRC = ("'self'", "'unsafe-inline'") # 'unsafe-inline' allows some admin panel styles
+# CSP_SCRIPT_SRC = ("'self'",)
+
+# # 5. Permissions-Policy
+# # We explicitly block hardware access for the API to get the A+
+# PERMISSIONS_POLICY = {
+#     'accelerometer': [],
+#     'camera': [], 
+#     'geolocation': [],
+#     'gyroscope': [],
+#     'magnetometer': [],
+#     'microphone': [],
+#     'payment': [],
+#     'usb': [],
+# }
+
+# # 6. X-Frame-Options (Protects against Clickjacking)
+# X_FRAME_OPTIONS = 'DENY'
+
+# # 7. Cross-Origin-Opener-Policy (Isolates the window)
+# SECURE_CROSS_ORIGIN_OPENER_POLICY = 'same-origin'
