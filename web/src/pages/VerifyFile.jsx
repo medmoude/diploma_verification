@@ -8,7 +8,6 @@ import {
   faArrowUpRightFromSquare,
   faTriangleExclamation,
   faLock,
-  faCircleCheck,
 } from "@fortawesome/free-solid-svg-icons";
 
 export default function VerifyFile() {

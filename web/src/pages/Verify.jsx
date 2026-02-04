@@ -7,7 +7,6 @@ import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import {
   faCheckCircle,
   faTimesCircle,
-  faDownload,
   faCopy,
   faPrint,
   faUserGraduate,

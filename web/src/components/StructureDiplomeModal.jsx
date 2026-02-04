@@ -19,8 +19,8 @@ export default function StructureDiplomeModal({ structure, onClose, onSaved }) {
     institut_ar: structure?.institut_ar || "المعهد العالي للإحصاء",
 
     // Title & Citations
-    diplome_titre_fr: structure?.diplome_titre_fr || "Diplôme de Licence Professionnelle",
-    diplome_titre_ar: structure?.diplome_titre_ar || "شهادة الليصانص المهنية",
+    diplome_titre_fr: structure?.diplome_titre_fr || "Diplôme de Licence",
+    diplome_titre_ar: structure?.diplome_titre_ar || "شهادة اللسانس ",
     citations_juridiques_fr: structure?.citations_juridiques_fr || "",
     citations_juridiques_ar: structure?.citations_juridiques_ar || "",
 
@@ -36,8 +36,8 @@ export default function StructureDiplomeModal({ structure, onClose, onSaved }) {
     signataire_gauche_ar: structure?.signataire_gauche_ar || "قائد مجمع بوليتكنيك",
     signataire_gauche_nom: structure?.signataire_gauche_nom || "",
     
-    signataire_droit_fr: structure?.signataire_droit_fr || "مدير المعهد العالي للإحصاء",
-    signataire_droit_ar: structure?.signataire_droit_ar || "Le Directeur de l'Institut Supérieur de la Statistique",
+    signataire_droit_ar: structure?.signataire_droit_fr || "Le Directeur de l'Institut Supérieur de la Statistique",
+    signataire_droit_fr: structure?.signataire_droit_ar || "مدير المعهد العالي للإحصاء",
     signataire_droit_nom: structure?.signataire_droit_nom || "",
   });
 
