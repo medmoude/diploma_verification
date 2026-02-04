@@ -36,8 +36,8 @@ export default function StructureDiplomeModal({ structure, onClose, onSaved }) {
     signataire_gauche_ar: structure?.signataire_gauche_ar || "قائد مجمع بوليتكنيك",
     signataire_gauche_nom: structure?.signataire_gauche_nom || "",
     
-    signataire_droit_ar: structure?.signataire_droit_fr || "Le Directeur de l'Institut Supérieur de la Statistique",
-    signataire_droit_fr: structure?.signataire_droit_ar || "مدير المعهد العالي للإحصاء",
+    signataire_droit_fr: structure?.signataire_droit_fr || "Le Directeur de l'Institut Supérieur de la Statistique",
+    signataire_droit_ar: structure?.signataire_droit_ar || "مدير المعهد العالي للإحصاء",
     signataire_droit_nom: structure?.signataire_droit_nom || "",
   });
 
