@@ -769,25 +769,32 @@ class DashboardStatsView(APIView):
             .order_by("annee_universitaire__code_annee")
         )
 
-        # age distribution (PostgreSQL) -----------------
-        age_years = Cast(
-            Func(
-                Value("year"),
-                Func(Now(), F("date_naissance"), function="age"),
-                function="date_part",
-            ),
-            IntegerField(),
-        )
+        
+        from datetime import date
+        today = date.today()
+        
+        # Get all birth dates
+        dates_naissance = Etudiant.objects.values_list('date_naissance', flat=True)
+        
+        ages = []
+        for d in dates_naissance:
+            if d:
+                # Calculate age in Python
+                age = today.year - d.year - ((today.month, today.day) < (d.month, d.day))
+                ages.append(age)
 
-        age_distribution = (
-            Etudiant.objects
-            .annotate(age=age_years)
-            .values("age")
-            .annotate(count=Count("id"))
-            .order_by("age")
-        )
+        # Calculate Distribution
+        from collections import Counter
+        age_counts = Counter(ages)
+        
+        # Format for Recharts
+        age_distribution = [
+            {"age": age, "count": count} 
+            for age, count in sorted(age_counts.items())
+        ]
 
-        avg_age = Etudiant.objects.annotate(age=age_years).aggregate(avg=Avg("age"))["avg"]
+        # Calculate Average
+        avg_age = sum(ages) / len(ages) if ages else 0
 
         # Optional useful extra statistics -----------------
         totals = {
