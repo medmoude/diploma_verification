@@ -15,7 +15,9 @@ export default function Dashboard() {
     api.get("dashboard-stats/").then(res => setData(res.data));
   }, []);
 
-  // if (!data) return <MainLayout title="Dashboard">Loading...</MainLayout>;
+  console.log(data);
+
+  if (!data) return <MainLayout title="Dashboard">Loading...</MainLayout>;
 
   const COLORS = ["#10B981", "#EF4444"];
 
