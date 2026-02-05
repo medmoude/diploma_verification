@@ -185,8 +185,8 @@ export default function StructureDiplomeModal({ structure, onClose, onSaved }) {
         </div>
 
         <div className="flex justify-end gap-2 mt-6 pt-4 border-t">
-          <button onClick={onClose} className="px-4 py-2 bg-gray-200 rounded">Annuler</button>
-          <button onClick={handleSubmit} className="px-6 py-2 bg-blue-800 text-white rounded font-bold">Enregistrer</button>
+          <button onClick={onClose} className="px-4 py-2 bg-gray-200 rounded hover:bg-gray-300 hover:scale-y-110 transition-all duration-300 ease-in-out">Annuler</button>
+          <button onClick={handleSubmit} className="px-6 py-2 bg-blue-800 text-white rounded font-bold hover:bg-blue-700 hover:scale-y-110 transition-all duration-300 ease-in-out">Enregistrer</button>
         </div>
       </div>
     </div>

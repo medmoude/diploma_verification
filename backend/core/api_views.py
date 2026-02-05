@@ -33,6 +33,8 @@ import io
 from datetime import datetime
 from django.utils.timezone import now
 
+from openpyxl.styles import Font, PatternFill, Alignment
+from openpyxl.utils import get_column_letter
 import pandas as pd
 import qrcode
 
@@ -214,9 +216,39 @@ class EtudiantViewSet(viewsets.ModelViewSet):
             "mention_fr", "mention_ar"
         ]
         df = pd.DataFrame(columns=columns)
+        
         response = HttpResponse(content_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
         response["Content-Disposition"] = 'attachment; filename="etudiants_template.xlsx"'
-        df.to_excel(response, index=False)
+
+        # Write to response using the openpyxl engine with styling
+        with pd.ExcelWriter(response, engine='openpyxl') as writer:
+            df.to_excel(writer, index=False, sheet_name='Template')
+            ws = writer.sheets['Template']
+
+            # Define Header Styles (Blue background, White bold text, Centered)
+            header_font = Font(bold=True, color="FFFFFF")
+            header_fill = PatternFill("solid", fgColor="6A0DAD")
+            center_align = Alignment(horizontal="center", vertical="center")
+
+            # Apply style to the header row (Row 1)
+            for cell in ws[1]:
+                cell.font = header_font
+                cell.fill = header_fill
+                cell.alignment = center_align
+
+            # Auto-adjust column widths
+            for col in ws.columns:
+                max_length = 0
+                column = col[0].column_letter 
+                for cell in col:
+                    try:
+                        if len(str(cell.value)) > max_length:
+                            max_length = len(str(cell.value))
+                    except:
+                        pass
+                adjusted_width = (max_length + 5) # Added padding
+                ws.column_dimensions[column].width = adjusted_width
+        
         return response
 
 
@@ -769,7 +801,7 @@ class DashboardStatsView(APIView):
             .order_by("annee_universitaire__code_annee")
         )
 
-        
+
         from datetime import date
         today = date.today()
         

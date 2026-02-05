@@ -2,7 +2,7 @@ import 'dart:convert';
 import 'dart:io';
 import 'package:http/http.dart' as http;
 
-const baseUrl = "http://10.9.164.15:8000/api";
+const baseUrl = "https://medmoude.pythonanywhere.com/api";
 
 class ApiService {
   static Future<Map<String, dynamic>> verifyByUuid(String uuid) async {

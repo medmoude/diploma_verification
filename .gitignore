@@ -199,3 +199,56 @@ app.*.map.json
 /android/app/debug
 /android/app/profile
 /android/app/release
+
+
+# ========================
+# DJANGO RUNTIME FILES
+# ========================
+backend/diplome_storage/
+backend/media/
+backend/staticfiles/
+
+# Uploaded PDFs / user files
+*.pdf
+
+# ========================
+# FLUTTER / MOBILE TRASH
+# ========================
+mobile/build/
+mobile/.dart_tool/
+mobile/.flutter-plugins
+mobile/.flutter-plugins-dependencies
+mobile/.pub-cache/
+mobile/.pub/
+mobile/ios/Pods/
+mobile/ios/.symlinks/
+mobile/ios/Flutter/Flutter.framework
+mobile/ios/Flutter/Flutter.podspec
+mobile/ios/Runner/Assets.xcassets/AppIcon.appiconset/
+mobile/android/.gradle/
+mobile/android/app/build/
+
+# Generated icons
+**/mipmap-*/
+**/AppIcon.appiconset/
+
+# ========================
+# XCODE / ANDROID GENERATED
+# ========================
+*.pbxproj
+*.xcworkspace
+*.xcuserdata
+*.gradle
+local.properties
+
+# ========================
+# REACT / WEB
+# ========================
+web/node_modules/
+web/build/
+web/dist/
+
+# ========================
+# LOCK FILES (mono repo sanity)
+# ========================
+mobile/pubspec.lock
