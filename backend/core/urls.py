@@ -15,7 +15,11 @@ from .api_views import (
     VerifyUploadedPdfView,
     ProfileView,
     ChangePasswordView,
-    DashboardStatsView
+    VerifyEmailChangeView,
+    RequestPasswordResetView,
+    VerifyResetCodeView,
+    FinishPasswordResetView,
+    DashboardStatsView,
 )
 
 router = DefaultRouter()
@@ -42,6 +46,10 @@ urlpatterns = [
     # Profile and passwords
     path("profile/", ProfileView.as_view()),
     path("change-password/", ChangePasswordView.as_view()),
+    path('profile/verify-email/', VerifyEmailChangeView.as_view()),
+    path('password-reset/request/', RequestPasswordResetView.as_view()),
+    path('password-reset/verify/', VerifyResetCodeView.as_view()),
+    path('password-reset/finish/', FinishPasswordResetView.as_view()),
 
     #Statistics and visuals for the Dashboard
     path("dashboard-stats/", DashboardStatsView.as_view()),

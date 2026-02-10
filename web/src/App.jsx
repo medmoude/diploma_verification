@@ -14,6 +14,7 @@ import StructureDiplome from "./pages/StructureDiplome";
 import VerifyFile from "./pages/VerifyFile";
 import VerificationLayout from "./components/Layout/VerificationLayout";
 import Profile from "./pages/Profile";
+import ForgotPassword from "./pages/ForgotPassword";
 
 function App() {
   return (
@@ -21,6 +22,7 @@ function App() {
       <Routes>
         {/* Public */}
         <Route path="/login" element={<Login />} />
+        <Route path="/forgot-password" element={<ForgotPassword />} />
         <Route path="/verify/:verification_uuid" element={<Verify />} />
         <Route path="/" element={<VerificationLayout />} />
         <Route path="/verify-file" element={<VerifyFile />} />

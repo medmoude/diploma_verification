@@ -7,7 +7,8 @@ import {
   faEyeSlash,
   faLock,
   faKey,
-  faCheckCircle
+  faCheckCircle,
+  faTimesCircle
 } from "@fortawesome/free-solid-svg-icons";
 
 
@@ -37,6 +38,14 @@ const PasswordInput = ({ value, onChange, placeholder, show, toggleShow, icon })
 );
 /* -------------------------------------------------- */
 
+const PWD_RULES = [
+  { label: "8 caractères min.", test: (p) => p.length >= 8 },
+  { label: "1 Majuscule", test: (p) => /[A-Z]/.test(p) },
+  { label: "1 Minuscule", test: (p) => /[a-z]/.test(p) },
+  { label: "1 Chiffre", test: (p) => /[0-9]/.test(p) },
+  { label: "1 Caractère spécial", test: (p) => /[!@#$%^&*(),.?":{}|<>]/.test(p) },
+];
+
 
 export default function ChangePasswordModal({ open, onClose }) {
   const [oldPass, setOldPass] = useState("");
@@ -51,6 +60,12 @@ export default function ChangePasswordModal({ open, onClose }) {
   if (!open) return null;
 
   const handleSubmit = async () => {
+    const allValid = PWD_RULES.every(rule => rule.test(newPass));
+    if (!allValid) {
+        setAlert({ type: "error", msg: "Le mot de passe ne respecte pas les critères." });
+        return;
+    }
+
     if (newPass !== confirmPass) {
       setAlert({ type: "error", msg: "Les mots de passe ne correspondent pas" });
       return;
@@ -148,6 +163,26 @@ export default function ChangePasswordModal({ open, onClose }) {
               toggleShow={() => setShowNewPass(!showNewPass)}
               icon={faLock}
             />
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-y-1 gap-x-4 mt-2 ml-1 mb-4">
+              {PWD_RULES.map((rule, index) => {
+                const isValid = rule.test(newPass);
+                return (
+                  <div 
+                    key={index} 
+                    className={`flex items-center gap-2 text-xs transition-colors duration-200 ${
+                      isValid ? "text-green-600 font-medium" : "text-gray-400"
+                    }`}
+                  >
+                    <FontAwesomeIcon 
+                      icon={isValid ? faCheckCircle : faTimesCircle} 
+                      className={isValid ? "" : "text-gray-300"} 
+                    />
+                    <span>{rule.label}</span>
+                  </div>
+                );
+              })}
+            </div>
 
             <PasswordInput
               value={confirmPass}

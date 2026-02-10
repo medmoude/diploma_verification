@@ -186,6 +186,17 @@ SIMPLE_JWT = {
 }
 
 
+# Email Configuration
+EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
+EMAIL_HOST = 'smtp.gmail.com'
+EMAIL_PORT = 587
+EMAIL_USE_TLS = True
+EMAIL_HOST_USER = os.getenv('EMAIL_USER', '23618@isms.esp.mr')
+# IMPORTANT: This is NOT your login password. It is an "App Password".
+EMAIL_HOST_PASSWORD = os.getenv('EMAIL_PASSWORD', 'znzvdhzdvlaxxqxv')
+DEFAULT_FROM_EMAIL = EMAIL_HOST_USER
+
+
 # ==========================================
 # SECURITY HEADERS (commented in developpement)
 # ==========================================

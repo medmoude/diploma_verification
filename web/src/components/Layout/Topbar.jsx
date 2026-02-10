@@ -56,7 +56,7 @@ export default function Topbar({ title }) {
             {user.first_name} {user.last_name}
           </span>
           <span className="text-xs text-gray-400">
-            Administrateur
+            {user.is_superuser === true ? 'Administrateur' : 'scolarité'}
           </span>
         </div>
 

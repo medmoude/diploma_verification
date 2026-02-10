@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'screens/scan_qr_screen.dart';
 import 'screens/upload_pdf_screen.dart';
+import 'screens/share_handler_wrapper.dart';
 
 void main() {
   runApp(MyApp());
@@ -30,7 +31,9 @@ class MyApp extends StatelessWidget {
           ),
         ),
       ),
-      home: HomeScreen(),
+      home: ShareHandlerWrapper(
+        child: HomeScreen(),
+      ),
     );
   }
 }

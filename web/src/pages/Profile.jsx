@@ -26,6 +26,8 @@ export default function Profile() {
 
   const [alert, setAlert] = useState(null);
   const [modalOpen, setModalOpen] = useState(false);
+  const [showOtpModal, setShowOtpModal] = useState(false);
+  const [otpCode, setOtpCode] = useState("");
 
   useEffect(() => {
     api.get("profile/").then(res => {
@@ -40,12 +42,35 @@ export default function Profile() {
 
   const toggleEdit = async (field) => {
     if (editing[field]) {
-      // save
-      await api.put("profile/", { [field]: fields[field] });
-      setAlert({ type: "success", msg: "Profil mis à jour" });
-    }
+      try {
+        const res = await api.put("profile/", { [field]: fields[field] });
+        
+        // Check if backend asks for OTP
+        if (res.status === 202 && res.data.status === "email_verification_required") {
+          setAlert({ type: "info", msg: "Code envoyé à votre nouvel email." });
+          setShowOtpModal(true); // <--- OPEN MODAL
+          return; // Don't close edit mode yet
+        }
 
+        setAlert({ type: "success", msg: "Profil mis à jour" });
+      } catch (err) {
+        setAlert({ type: "error", msg: err.response?.data?.error || "Erreur" });
+        return; // Stop here on error
+      }
+    }
     setEditing(prev => ({ ...prev, [field]: !prev[field] }));
+  };
+
+  const verifyEmail = async () => {
+    try {
+      await api.post("profile/verify-email/", { code: otpCode });
+      setAlert({ type: "success", msg: "Email confirmé et mis à jour !" });
+      setShowOtpModal(false);
+      setEditing({ ...editing, email: false }); // Lock the field
+      setOtpCode("");
+    } catch (err) {
+      setAlert({ type: "error", msg: "Code incorrect" });
+    }
   };
 
   const renderField = (label, field) => (
@@ -107,7 +132,9 @@ export default function Profile() {
                   <FontAwesomeIcon icon={faUserCircle} className="text-6xl sm:text-7xl" />
                 </div>
                 <h2 className="text-2xl sm:text-3xl font-bold mb-2">{user.username}</h2>
-                <p className="text-blue-100 text-sm mb-6">Administrateur</p>
+                <p className="text-blue-100 text-sm mb-6">
+                  {user.is_superuser === true ? 'Administrateur' : 'scolarité'}
+                </p>
                 <button
                   onClick={() => setModalOpen(true)}
                   className="bg-white text-blue-700 px-6 py-3 rounded-xl font-bold hover:bg-blue-50 transition-all duration-200 shadow-lg hover:shadow-xl hover:scale-105 active:scale-95"
@@ -132,6 +159,27 @@ export default function Profile() {
         open={modalOpen}
         onClose={() => setModalOpen(false)}
       />
+
+      {showOtpModal && (
+        <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50">
+          <div className="bg-white p-6 rounded-2xl shadow-xl w-80">
+            <h3 className="text-lg font-bold mb-4">Code de vérification</h3>
+            <input 
+              type="text" 
+              value={otpCode}
+              onChange={(e) => setOtpCode(e.target.value)}
+              className="w-full border-2 border-gray-200 rounded-xl p-3 mb-4 text-center text-xl tracking-widest"
+              placeholder="123456"
+              maxLength={6}
+            />
+            <div className="flex gap-2">
+              <button onClick={() => setShowOtpModal(false)} className="flex-1 bg-gray-100 py-2 rounded-xl">Annuler</button>
+              <button onClick={verifyEmail} className="flex-1 bg-blue-600 text-white py-2 rounded-xl">Valider</button>
+            </div>
+          </div>
+        </div>
+      )}
+
     </MainLayout>
   );
 }

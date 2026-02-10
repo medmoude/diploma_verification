@@ -2,7 +2,16 @@ from django.db import models
 from django.core.exceptions import ValidationError
 from django.core.validators import RegexValidator
 from django.contrib.auth.models import User
+from django.contrib.auth import get_user_model
 import uuid
+import random
+import string
+from django.utils import timezone
+from datetime import timedelta
+
+
+def generate_hex_uuid():
+    return uuid.uuid4().hex
 
 
 annee_validator = RegexValidator(
@@ -75,7 +84,7 @@ class Diplome(models.Model):
     annee_obtention = models.IntegerField()
     fichier_pdf = models.CharField(max_length=400)   # absolute sealed path
     hash_signature = models.CharField(max_length=64, unique=True)  # SHA256 of PDF
-    verification_uuid = models.CharField(max_length=32, unique=True, default=uuid.uuid4().hex)  # QR / verification UUID
+    verification_uuid = models.CharField(max_length=32, unique=True, default=generate_hex_uuid)  # QR / verification UUID
     date_televersement = models.DateTimeField(auto_now_add=True)
     est_annule = models.BooleanField(default=False)
     annule_a = models.DateTimeField(null=True, blank=True)
@@ -156,3 +165,46 @@ class Verification(models.Model):
     date_verification = models.DateTimeField(auto_now_add=True)
     adresse_ip = models.GenericIPAddressField(null=True, blank=True)
     statut = models.CharField(max_length=20, choices=[("succes", "Succès"), ("echec", "Échec")])
+
+
+
+User = get_user_model()
+
+class PasswordHistory(models.Model):
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='password_history')
+    password_hash = models.CharField(max_length=255)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ['-created_at'] # Newest first
+
+    def __str__(self):
+        return f"{self.user.username} - {self.created_at}"
+    
+
+
+class EmailChangeRequest(models.Model):
+    user = models.OneToOneField(User, on_delete=models.CASCADE, related_name='email_change_request')
+    new_email = models.EmailField()
+    code = models.CharField(max_length=6)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    def generate_code(self):
+        self.code = str(random.randint(100000, 999999))
+        self.save()
+
+
+
+class PasswordResetRequest(models.Model):
+    user = models.ForeignKey(User, on_delete=models.CASCADE)
+    code = models.CharField(max_length=8)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    def is_valid(self):
+        # Code valid for 15 minutes
+        return self.created_at >= timezone.now() - timedelta(minutes=15)
+
+    @staticmethod
+    def generate_code():
+        chars = string.ascii_uppercase + string.digits
+        return ''.join(random.choice(chars) for _ in range(6))

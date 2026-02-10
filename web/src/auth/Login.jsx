@@ -2,6 +2,7 @@ import { useState } from "react";
 import api from "../api/axios";
 import { useNavigate } from "react-router-dom";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
+import { Link } from "react-router-dom";
 import {
   faUser,
   faLock,
@@ -98,6 +99,12 @@ export default function Login() {
                 placeholder="••••••••"
                 className="w-full pl-10 pr-4 py-3 rounded-xl border border-slate-300 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none transition"
               />
+            <div className="text-right mb-4">
+              <Link to="/forgot-password" className="text-sm text-blue-600 hover:underline">
+                Mot de passe oublié ?
+              </Link>
+            </div>
+
             </div>
           </div>
 

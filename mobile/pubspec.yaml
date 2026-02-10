@@ -20,9 +20,14 @@ dependencies:
   
   # File picking
   file_picker: ^8.0.0
+
+  # File sharing
+  receive_sharing_intent: ^1.8.1
   
   # Permissions
   permission_handler: ^11.0.1
+
+  
 
 dev_dependencies:
   flutter_test:

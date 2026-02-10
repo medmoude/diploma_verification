@@ -5,11 +5,13 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 from rest_framework.permissions import IsAuthenticated, AllowAny
 from django.contrib.auth.models import User
+from django.core.mail import send_mail
 
 from django.core.validators import validate_email
 from django.core.exceptions import ValidationError
 from django.contrib.auth.password_validation import validate_password
 from django.contrib.auth import update_session_auth_hash
+from django.contrib.auth.hashers import check_password
 
 from django_ratelimit.decorators import ratelimit
 from django.utils.decorators import method_decorator
@@ -64,7 +66,7 @@ from cryptography.hazmat.backends import default_backend
 
 
 # Models & Serializers
-from .models import Diplome, Etudiant, Verification, Filiere, AnneeUniversitaire, StructureDiplome
+from .models import Diplome, Etudiant, Verification, Filiere, AnneeUniversitaire, StructureDiplome, PasswordHistory, EmailChangeRequest, PasswordResetRequest
 from .serializers import (
     DiplomeSerializer,
     StructureDiplomeSerializer,
@@ -680,9 +682,11 @@ class DownloadDiplomeView(APIView):
 
 
 # ========= profile and password change =======
+
 class ProfileView(APIView):
     permission_classes = [IsAuthenticated]
 
+    # --- RESTORED GET METHOD ---
     def get(self, request):
         u = request.user
         return Response({
@@ -690,34 +694,74 @@ class ProfileView(APIView):
             "email": u.email,
             "first_name": u.first_name,
             "last_name": u.last_name,
+            "is_superuser": u.is_superuser
         })
 
+    # --- THE PUT METHOD (With Email Verification) ---
     def put(self, request):
-        u = request.user
+        user = request.user
+        data = request.data
+        response_data = {}
 
-        # Email validation + uniqueness (only if email provided)
-        if "email" in request.data:
-            email = (request.data.get("email") or "").strip().lower()
+        # 1. Handle Standard Fields (Name, etc.) immediately
+        user.first_name = data.get("first_name", user.first_name)
+        user.last_name = data.get("last_name", user.last_name)
+        user.save()
+        response_data["message"] = "Profil mis à jour."
 
-            try:
-                validate_email(email)
-            except ValidationError:
-                return Response({"error": "Email invalide"}, status=400)
+        # 2. Handle Email Change (If different)
+        new_email = (data.get("email") or "").strip().lower()
+        if new_email and new_email != user.email:
+            # Check if email is taken by another user
+            if User.objects.filter(email=new_email).exists():
+                return Response({"error": "Cet email est déjà utilisé."}, status=400)
 
-            if User.objects.filter(email=email).exclude(pk=u.pk).exists():
-                return Response({"error": "Email déjà utilisé"}, status=400)
+            # Create/Update Verification Request
+            req, created = EmailChangeRequest.objects.update_or_create(
+                user=user,
+                defaults={'new_email': new_email}
+            )
+            req.generate_code()
 
-            u.email = email
+            # SEND EMAIL 
+            # Note: Remove the print statement in production
+            print(f"DEBUG CODE: {req.code}") 
+            send_mail(
+                'Confirmez votre nouvel email',
+                f'Votre code de validation est : {req.code}',
+                'noreply@myapp.com',
+                [new_email],
+                fail_silently=False,
+            )
+
+            # Signal frontend to open OTP modal
+            response_data["status"] = "email_verification_required"
+            response_data["message"] = "Veuillez vérifier votre nouvel email."
+            return Response(response_data, status=202) # 202 Accepted
+
+        return Response(response_data)
+    
+
+
+class VerifyEmailChangeView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request):
+        code = request.data.get("code")
+        try:
+            req = EmailChangeRequest.objects.get(user=request.user)
+        except EmailChangeRequest.DoesNotExist:
+            return Response({"error": "Aucune demande de changement d'email trouvée."}, status=404)
+
+        if req.code == code:
+            # Apply the change
+            request.user.email = req.new_email
+            request.user.save()
+            req.delete() # Cleanup
+            return Response({"message": "Email modifié avec succès !"})
         else:
-            # keep previous behavior if email not sent
-            u.email = request.data.get("email", u.email)
+            return Response({"error": "Code incorrect."}, status=400)
 
-        # functionnality for names
-        u.first_name = request.data.get("first_name", u.first_name)
-        u.last_name = request.data.get("last_name", u.last_name)
-
-        u.save()
-        return Response({"message": "Profil mis à jour"})
 
 
 class ChangePasswordView(APIView):
@@ -728,23 +772,128 @@ class ChangePasswordView(APIView):
         old = request.data.get("old_password")
         new = request.data.get("new_password")
 
+        # 1. Verify old password
         if not user.check_password(old):
-            print(user.check_password(old))
             return Response({"error": "Ancien mot de passe incorrect"}, status=400)
 
-        # Password policy (uses AUTH_PASSWORD_VALIDATORS in settings.py)
+        # 2. Check Password History (Prevent Reuse)
+        # We check the last 3 passwords to avoid performance issues
+        previous_passwords = PasswordHistory.objects.filter(user=user)[:3]
+        
+        for history in previous_passwords:
+            if check_password(new, history.password_hash):
+                return Response({"error": "Vous avez déjà utilisé ce mot de passe récemment."}, status=400)
+        
+        # Also check against the CURRENT password (in case it wasn't in history yet)
+        if check_password(new, user.password):
+             return Response({"error": "C'est votre mot de passe actuel."}, status=400)
+
+        # 3. Validate Policy (Length, Special chars, etc.)
         try:
             validate_password(new, user=user)
         except ValidationError as e:
             return Response({"error": list(e.messages)}, status=400)
 
+        # 4. Save New Password
         user.set_password(new)
         user.save()
 
-        # Keep user logged in if you're using session auth (safe even with JWT)
+        # 5. Add to History
+        PasswordHistory.objects.create(user=user, password_hash=user.password)
+
+        # Keep session alive
         update_session_auth_hash(request, user)
 
-        return Response({"message": "Mot de passe modifié"})
+        return Response({"message": "Mot de passe modifié avec succès"})
+    
+
+
+class RequestPasswordResetView(APIView):
+    permission_classes = [] # Allow anyone
+
+    def post(self, request):
+        email = request.data.get("email", "").strip().lower()
+        try:
+            user = User.objects.get(email=email)
+        except User.DoesNotExist:
+            return Response({"error": "Aucun compte associé à cet email."}, status=404)
+
+        # Generate & Save Code
+        code = PasswordResetRequest.generate_code()
+        # Delete old requests for this user
+        PasswordResetRequest.objects.filter(user=user).delete()
+        PasswordResetRequest.objects.create(user=user, code=code)
+
+        # Send Email
+        print(f"DEBUG RESET CODE: {code}") # Remove in production
+        send_mail(
+            'Réinitialisation de mot de passe',
+            f'Votre code de réinitialisation est : {code}',
+            'noreply@myapp.com',
+            [email],
+            fail_silently=False,
+        )
+        return Response({"message": "Code envoyé !"})
+
+
+
+class VerifyResetCodeView(APIView):
+    permission_classes = []
+
+    def post(self, request):
+        email = request.data.get("email")
+        code = request.data.get("code")
+        
+        try:
+            user = User.objects.get(email=email)
+            reset_req = PasswordResetRequest.objects.get(user=user, code=code)
+            if not reset_req.is_valid():
+                return Response({"error": "Code expiré."}, status=400)
+            return Response({"message": "Code valide."})
+        except (User.DoesNotExist, PasswordResetRequest.DoesNotExist):
+            return Response({"error": "Code invalide."}, status=400)
+
+
+
+class FinishPasswordResetView(APIView):
+    permission_classes = []
+
+    def post(self, request):
+        email = request.data.get("email")
+        code = request.data.get("code")
+        new_pass = request.data.get("new_password")
+
+        try:
+            user = User.objects.get(email=email)
+            reset_req = PasswordResetRequest.objects.get(user=user, code=code)
+            if not reset_req.is_valid():
+                return Response({"error": "Code expiré."}, status=400)
+        except (User.DoesNotExist, PasswordResetRequest.DoesNotExist):
+             return Response({"error": "Requête invalide."}, status=400)
+
+        # 1. History Check
+        previous_passwords = PasswordHistory.objects.filter(user=user)[:5]
+        for history in previous_passwords:
+            if check_password(new_pass, history.password_hash):
+                return Response({"error": "Mot de passe déjà utilisé récemment."}, status=400)
+        
+        if check_password(new_pass, user.password):
+             return Response({"error": "C'est votre mot de passe actuel."}, status=400)
+
+        # 2. Policy Validation
+        try:
+            validate_password(new_pass, user=user)
+        except ValidationError as e:
+            return Response({"error": list(e.messages)}, status=400)
+
+        # 3. Save
+        user.set_password(new_pass)
+        user.save()
+        
+        PasswordHistory.objects.create(user=user, password_hash=user.password)
+        reset_req.delete() # Consume code
+
+        return Response({"message": "Mot de passe réinitialisé avec succès !"})
 
     
 
