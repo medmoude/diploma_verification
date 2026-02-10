@@ -503,7 +503,7 @@ class GenerateDiplomeView(APIView):
         left_name = structure.signataire_gauche_nom or ""
         if has_arabic(left_name):
             c.setFont(ar_bold, 13)
-            c.drawString(50 * mm, name_y2, reshape_text(left_name))
+            c.drawString(30 * mm, name_y2, reshape_text(left_name))
         else:
             c.setFont("Times-Bold", 13)
             c.drawString(50 * mm, name_y2, left_name.upper())
@@ -518,7 +518,7 @@ class GenerateDiplomeView(APIView):
         right_name = structure.signataire_droit_nom or ""
         if has_arabic(right_name):
             c.setFont(ar_bold, 13)
-            c.drawString(width - 80 * mm, name_y2, reshape_text(right_name))
+            c.drawString(width - 90 * mm, name_y2, reshape_text(right_name))
         else:
             c.setFont("Times-Bold", 13)
             c.drawString(width - 80 * mm, name_y2, right_name.upper())
