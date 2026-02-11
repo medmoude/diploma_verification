@@ -14,6 +14,7 @@ import {
 import Pagination from "../components/Pagination";
 import AnnulerDiplomeModal from "../components/AnnulerDiplomeModal";
 import DiplomeDetailsModal from "../components/DiplomeDetailsModal";
+import GeneratingModal from "../components/GeneratingModal";
 
 function Diplomes() {
   /* ===================== STATE ===================== */
@@ -40,6 +41,7 @@ function Diplomes() {
   const [loading, setLoading] = useState(true);
   const [showGenerateModal, setShowGenerateModal] = useState(false);
   const [showBulkGenerateModal, setShowBulkGenerateModal] = useState(false);
+  const [isGenerating, setIsGenerating] = useState(false);
 
   /* ===================== FETCH ===================== */
   useEffect(() => {
@@ -94,6 +96,7 @@ function Diplomes() {
 
   const handleGenerate = async () => {
     if (!selectedEtudiant) { alert("Veuillez sélectionner un étudiant"); return; }
+    setIsGenerating(true);
     try {
       await api.post(`diplomes/generate/${selectedEtudiant}/`);
       await refreshDiplomes();
@@ -102,11 +105,14 @@ function Diplomes() {
       alert("Diplôme généré avec succès");
     } catch (err) {
       alert(err.response?.data?.error || "Erreur génération diplôme");
+    } finally {
+      setIsGenerating(false);
     }
   };
 
 const handleGenerateByFiliere = async () => {
     if (!selectedFiliere || !selectedAnnee) { alert("Sélectionnez une filière et une année"); return; }
+    setIsGenerating(true);
     try {
       // 1. Capture the response
       const res = await api.post("diplomes/generate-by-filiere/", {
@@ -131,6 +137,8 @@ const handleGenerateByFiliere = async () => {
 
     } catch (err) {
       alert(err.response?.data?.error || "Erreur génération en masse");
+    } finally {
+      setIsGenerating(false);
     }
   };
 
@@ -482,6 +490,8 @@ const handleGenerateByFiliere = async () => {
           onClose={() => setDetailsOpen(false)}
           data={detailsData}
         />
+
+        <GeneratingModal open={isGenerating} />
 
       </div>
     </MainLayout>
