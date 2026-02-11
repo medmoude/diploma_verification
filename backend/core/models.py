@@ -2,6 +2,7 @@ from django.db import models
 from django.core.exceptions import ValidationError
 from django.core.validators import RegexValidator
 from django.contrib.auth.models import User
+from django.conf import settings
 from django.contrib.auth import get_user_model
 import uuid
 import random
@@ -72,7 +73,6 @@ class Etudiant(models.Model):
 
     def __str__(self):
         return f"{self.nom_prenom_fr}"
-
 
 
 
@@ -208,3 +208,19 @@ class PasswordResetRequest(models.Model):
     def generate_code():
         chars = string.ascii_uppercase + string.digits
         return ''.join(random.choice(chars) for _ in range(6))
+
+
+
+class PVJury(models.Model):
+    filiere = models.ForeignKey('Filiere', on_delete=models.CASCADE)
+    annee_universitaire = models.ForeignKey('AnneeUniversitaire', on_delete=models.CASCADE)
+    image_pv = models.ImageField(upload_to='pvs_jury/')
+    date_upload = models.DateTimeField(auto_now_add=True)
+    uploaded_by = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True)
+
+    class Meta:
+        # One PV per Filiere per Year
+        unique_together = ('filiere', 'annee_universitaire')
+
+    def __str__(self):
+        return f"PV {self.filiere} - {self.annee_universitaire}"

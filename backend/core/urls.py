@@ -20,6 +20,8 @@ from .api_views import (
     VerifyResetCodeView,
     FinishPasswordResetView,
     DashboardStatsView,
+    UserMeView,
+    PVJuryViewSet
 )
 
 router = DefaultRouter()
@@ -30,6 +32,7 @@ router.register("filieres", FiliereViewSet)
 router.register("verifications", VerificationViewSet)
 router.register("annee_universitaire", AnneUniversitaireViewSet)
 router.register("diplomes-annulation", DiplomeAnnulationViewSet, basename="diplome-annulation")
+router.register("pvs", PVJuryViewSet)
 
 
 urlpatterns = [
@@ -50,6 +53,7 @@ urlpatterns = [
     path('password-reset/request/', RequestPasswordResetView.as_view()),
     path('password-reset/verify/', VerifyResetCodeView.as_view()),
     path('password-reset/finish/', FinishPasswordResetView.as_view()),
+    path('users/me/', UserMeView.as_view(), name='user-me'),
 
     #Statistics and visuals for the Dashboard
     path("dashboard-stats/", DashboardStatsView.as_view()),

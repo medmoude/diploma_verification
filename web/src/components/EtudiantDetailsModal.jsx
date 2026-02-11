@@ -6,7 +6,6 @@ import {
   faFilePdf
 } from "@fortawesome/free-solid-svg-icons";
 import api from "../api/axios";
-import Alert from "./Alert";
 
 export default function EtudiantDetailsModal({
   open,
@@ -19,6 +18,11 @@ export default function EtudiantDetailsModal({
 }) {
   if (!open || !etudiant) return null;
 
+  // 1. Check User Permissions
+  // We now rely on 'is_superuser' stored in localStorage
+  const user = JSON.parse(localStorage.getItem("user") || "{}");
+  const canEdit = user.is_superuser; 
+
   const filiere = filieres.find(f => f.id === etudiant.filiere);
   const initials = `${etudiant.nom_prenom_fr[0]} ${etudiant.nom_prenom_ar[0]} `.toUpperCase();
 
@@ -27,7 +31,7 @@ export default function EtudiantDetailsModal({
   const generateDiplome = async () => {
     try {
       await api.post(`diplomes/generate/${etudiant.id}/`);
-      alert("diplôme genéré avec succès.")
+      alert("Diplôme généré avec succès.")
       refresh();
       
     } catch (err) {
@@ -117,43 +121,44 @@ export default function EtudiantDetailsModal({
           )}
         </div>
 
-        {/* Actions */}
-        <div className="flex justify-between mt-6">
-          {diplomes.length === 0 ? (
-            <button
-              onClick={generateDiplome}
-              className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 hover:scale-y-110 transition-all duration-300 ease-in-out"
-            >
-              Générer diplôme
-            </button>
-          ) : (
-            <button
-              disabled
-              className="px-4 py-2 bg-blue-300 text-white rounded hover:cursor-not-allowed"
-            >
-              Générer diplôme
-            </button>
-          )
-          }
+        {/* Actions - ONLY VISIBLE IF USER IS SUPERUSER */}
+        {canEdit && (
+          <div className="flex justify-between mt-6">
+            {diplomes.length === 0 ? (
+              <button
+                onClick={generateDiplome}
+                className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 hover:scale-y-110 transition-all duration-300 ease-in-out"
+              >
+                Générer diplôme
+              </button>
+            ) : (
+              <button
+                disabled
+                className="px-4 py-2 bg-blue-300 text-white rounded hover:cursor-not-allowed"
+              >
+                Générer diplôme
+              </button>
+            )}
 
-          <div className="flex gap-2">
-            <button
-              onClick={() => onEdit(etudiant)}
-              className="px-4 py-2 bg-yellow-500 text-white rounded hover:bg-yellow-600 hover:scale-y-110 transition-all duration-300 ease-in-out"
-              title="Modifier"
-            >
-              <FontAwesomeIcon icon={faEdit} />
-            </button>
+            <div className="flex gap-2">
+              <button
+                onClick={() => onEdit(etudiant)}
+                className="px-4 py-2 bg-yellow-500 text-white rounded hover:bg-yellow-600 hover:scale-y-110 transition-all duration-300 ease-in-out"
+                title="Modifier"
+              >
+                <FontAwesomeIcon icon={faEdit} />
+              </button>
 
-            <button
-              onClick={deleteEtudiant}
-              className="px-4 py-2 bg-red-500 text-white rounded hover:bg-red-600 hover:scale-y-110 transition-all duration-300 ease-in-out"
-              title="Supprimer"
-            >
-              <FontAwesomeIcon icon={faTrash} />
-            </button>
+              <button
+                onClick={deleteEtudiant}
+                className="px-4 py-2 bg-red-500 text-white rounded hover:bg-red-600 hover:scale-y-110 transition-all duration-300 ease-in-out"
+                title="Supprimer"
+              >
+                <FontAwesomeIcon icon={faTrash} />
+              </button>
+            </div>
           </div>
-        </div>
+        )}
 
       </div>
     </div>

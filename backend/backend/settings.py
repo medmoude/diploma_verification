@@ -1,6 +1,7 @@
 from datetime import timedelta
 from pathlib import Path
 import os
+from dotenv import load_dotenv
 
 
 
@@ -11,6 +12,15 @@ MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
 MEDIA_URL = '/media/'
 
 DIPLOME_STORAGE_DIR = os.path.join(BASE_DIR, 'diplome_storage')
+
+PV_STORAGE_DIR = os.path.join(BASE_DIR, 'pv_storage')
+
+# Make sure directory exists (optional but good practice)
+if not os.path.exists(PV_STORAGE_DIR):
+    os.makedirs(PV_STORAGE_DIR)
+
+# Load environement variables
+load_dotenv(BASE_DIR / '.env')
 
 
 # Local version

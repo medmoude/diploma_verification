@@ -15,6 +15,7 @@ import VerifyFile from "./pages/VerifyFile";
 import VerificationLayout from "./components/Layout/VerificationLayout";
 import Profile from "./pages/Profile";
 import ForgotPassword from "./pages/ForgotPassword";
+import GestionPVs from "./pages/GestionPVs";
 
 function App() {
   return (
@@ -76,6 +77,10 @@ function App() {
           path="/profile" 
           element={<PrivateRoute><Profile /></PrivateRoute>} 
         />
+
+        <Route
+          path="/gestion-pvs" 
+          element={<PrivateRoute><GestionPVs /></PrivateRoute>} />
 
       </Routes>
 

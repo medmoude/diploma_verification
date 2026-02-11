@@ -1,6 +1,6 @@
 from rest_framework import serializers
 from django.core.exceptions import ValidationError as DjangoValidationError
-from .models import Diplome, Etudiant, Filiere, Verification, AnneeUniversitaire, StructureDiplome
+from .models import Diplome, Etudiant, Filiere, Verification, AnneeUniversitaire, StructureDiplome, PVJury
 import re
 
 
@@ -157,3 +157,11 @@ class AnneeUniversitaireSerializer(serializers.ModelSerializer):
         
         instance.save()
         return instance
+    
+
+
+class PVJurySerializer(serializers.ModelSerializer):
+    class Meta:
+        model = PVJury
+        fields = "__all__"
+        read_only_fields = ['id']

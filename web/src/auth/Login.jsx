@@ -23,13 +23,19 @@ export default function Login() {
     setLoading(true);
 
     try {
+      // 1. Get Tokens
       const res = await api.post("token/", { username, password });
 
       localStorage.setItem("access", res.data.access);
       localStorage.setItem("refresh", res.data.refresh);
 
+      // 2. Fetch & Store User Details (The missing part)
+      const userRes = await api.get("users/me/"); 
+      localStorage.setItem("user", JSON.stringify(userRes.data));
+
       navigate("/dashboard");
-    } catch {
+    } catch (err) {
+      console.error(err);
       setError("Nom d’utilisateur ou mot de passe incorrect");
     } finally {
       setLoading(false);

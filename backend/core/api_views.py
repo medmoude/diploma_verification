@@ -4,6 +4,7 @@ from rest_framework.decorators import action
 from rest_framework.response import Response
 from rest_framework.views import APIView
 from rest_framework.permissions import IsAuthenticated, AllowAny
+from rest_framework.parsers import MultiPartParser, FormParser
 from django.contrib.auth.models import User
 from django.core.mail import send_mail
 
@@ -66,14 +67,15 @@ from cryptography.hazmat.backends import default_backend
 
 
 # Models & Serializers
-from .models import Diplome, Etudiant, Verification, Filiere, AnneeUniversitaire, StructureDiplome, PasswordHistory, EmailChangeRequest, PasswordResetRequest
+from .models import Diplome, Etudiant, Verification, Filiere, AnneeUniversitaire, StructureDiplome, PasswordHistory, EmailChangeRequest, PasswordResetRequest, PVJury
 from .serializers import (
     DiplomeSerializer,
     StructureDiplomeSerializer,
     EtudiantSerializer,
     FiliereSerializer,
     VerificationSerializer,
-    AnneeUniversitaireSerializer
+    AnneeUniversitaireSerializer,
+    PVJurySerializer
 )
 
 # Arabic support
@@ -287,6 +289,19 @@ class GenerateDiplomeView(APIView):
 
     def post(self, request, etudiant_id):
         etudiant = get_object_or_404(Etudiant, id=etudiant_id)
+
+        # Verify if Scolarité has uploaded the PV for this Filiere + Year
+        pv_exists = PVJury.objects.filter(
+            filiere=etudiant.filiere,
+            annee_universitaire=etudiant.annee_universitaire
+        ).exists()
+
+        if not pv_exists:
+            print("fuck it, they don't have pv")
+            return Response(
+                {"error": "Le PV du Jury pour cette filière et cette année n'a pas encore été importé par la scolarité."},
+                status=403
+            )
 
         structure = StructureDiplome.objects.first()
         if not structure:
@@ -895,6 +910,15 @@ class FinishPasswordResetView(APIView):
 
         return Response({"message": "Mot de passe réinitialisé avec succès !"})
 
+
+
+class PVJuryViewSet(viewsets.ModelViewSet):
+    queryset = PVJury.objects.all()
+    serializer_class = PVJurySerializer
+    parser_classes = (MultiPartParser, FormParser)
+
+    def perform_create(self, serializer):
+        serializer.save(uploaded_by=self.request.user)
     
 
 
@@ -1166,4 +1190,13 @@ class VerifyUploadedPdfView(APIView):
 
 
 
+class UserMeView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        return Response({
+            "id": request.user.id,
+            "username": request.user.username,
+            "is_superuser": request.user.is_superuser,
+        })
 
