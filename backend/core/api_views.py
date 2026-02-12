@@ -168,6 +168,14 @@ def next_diplome_number(year):
         return (last or 0) + 1
 
 
+def get_client_ip(request):
+    x_forwarded_for = request.META.get('HTTP_X_FORWARDED_FOR')
+    if x_forwarded_for:
+        ip = x_forwarded_for.split(',')[0].strip()
+    else:
+        ip = request.META.get('REMOTE_ADDR')
+    return ip
+
 # ===================== VIEWSETS =====================
 
 class EtudiantViewSet(viewsets.ModelViewSet):
@@ -1035,7 +1043,7 @@ class PublicVerificationView(APIView):
     @method_decorator(ratelimit(key="ip", rate="5/m", block=False))
     def get(self, request, verification_uuid):
 
-        ip = request.META.get("REMOTE_ADDR")
+        ip = get_client_ip(request)
 
         if getattr(request, "limited", False):
             Verification.objects.create(
@@ -1106,7 +1114,7 @@ class VerifyUploadedPdfView(APIView):
             )
 
         pdf_file = request.FILES["file"]
-        ip = request.META.get("REMOTE_ADDR")
+        ip = get_client_ip(request)
 
         # Helper function to log failed verifications
         def failed_verification():
@@ -1168,7 +1176,7 @@ class VerifyUploadedPdfView(APIView):
             # ✅ VALID
             Verification.objects.create(
                 diplome=diplome,
-                adresse_ip=request.META.get("REMOTE_ADDR"),
+                adresse_ip=get_client_ip(request),
                 statut="succes"
             )
 
