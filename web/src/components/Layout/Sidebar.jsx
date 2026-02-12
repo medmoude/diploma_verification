@@ -24,7 +24,7 @@ export default function Sidebar({ user }) {
     <div className="w-64 h-full bg-white border-r flex flex-col shadow-lg">
       <div className="h-16 flex items-center justify-center border-b font-bold text-xl text-indigo-700">
         <img src="/isms.jpeg" alt="Logo" className="w-8 h-8 mr-2"/>
-        {isAdmin ? "Espace Admin" : "Scolarité"}
+        {isAdmin ? "Espace Scolarité" : "Espace Directeur"}
       </div>
 
       <nav className="flex-1 p-4 space-y-2 overflow-y-auto">

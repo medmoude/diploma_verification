@@ -37,7 +37,7 @@ export default function Topbar({ title, user }) {
               {user?.first_name} {user?.last_name}
             </div>
             <div className={`text-xs px-2 py-0.5 rounded-full inline-block ${user?.is_superuser ? "bg-purple-100 text-purple-700" : "bg-blue-100 text-blue-700"}`}>
-              {user?.is_superuser ? 'Administrateur' : 'Scolarité'}
+              {user?.is_superuser ? 'Scolarité' : 'Directeur'}
             </div>
           </div>
           <FontAwesomeIcon icon={faUserCircle} className="text-3xl text-gray-400" />

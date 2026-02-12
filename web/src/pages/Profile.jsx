@@ -106,7 +106,7 @@ export default function Profile() {
   );
 
   return (
-    <MainLayout title="Profil Administrateur">
+    <MainLayout title="Profil">
       <div className="flex justify-center px-4 sm:px-6 py-6 sm:py-8">
         <div className="w-full max-w-2xl">
 
@@ -133,7 +133,7 @@ export default function Profile() {
                 </div>
                 <h2 className="text-2xl sm:text-3xl font-bold mb-2">{user.username}</h2>
                 <p className="text-blue-100 text-sm mb-6">
-                  {user.is_superuser === true ? 'Administrateur' : 'scolarité'}
+                  {user.is_superuser === true ? 'Scolarité' : 'Directeur'}
                 </p>
                 <button
                   onClick={() => setModalOpen(true)}
